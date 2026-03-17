@@ -140,6 +140,8 @@ section{padding:100px 0}
 .btn-g:hover{background:var(--gold2);transform:translateY(-2px);box-shadow:0 10px 28px rgba(198,169,107,.42)}
 .hero .btn-n{background:transparent;border:1.5px solid rgba(255,255,255,.35);color:#fff}
 .hero .btn-n:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.55);box-shadow:none}
+.hero .btn-ghost{background:transparent;border:1.5px solid rgba(255,255,255,.3);color:rgba(255,255,255,.86)}
+.hero .btn-ghost:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.42);box-shadow:none;transform:none}
 
 /* ═══════════════════════════════════════════════
    FORM ELEMENTS
@@ -209,8 +211,11 @@ header.sc{box-shadow:0 4px 28px rgba(15,23,42,.07)}
 ═══════════════════════════════════════════════ */
 .hero{position:relative;min-height:100vh;display:flex;align-items:center;padding:0;overflow:hidden}
 .hbg{position:absolute;inset:0;z-index:0;
-  background:linear-gradient(105deg,rgba(15,23,42,.84) 0%,rgba(15,23,42,.62) 42%,rgba(15,23,42,.24) 100%),
-  url('images/hero-bg.jpg') center/cover no-repeat, url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1800&q=82&auto=format') center/cover no-repeat}
+  background:linear-gradient(104deg,rgba(15,23,42,.88) 0%,rgba(15,23,42,.74) 48%,rgba(15,23,42,.58) 100%);
+  filter:contrast(.9) saturate(.88)}
+.hbg::before{content:'';position:absolute;inset:0;
+  background:url('images/hero-bg.jpg') center/cover no-repeat, url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1800&q=82&auto=format') center/cover no-repeat;
+  transform:scale(1.02)}
 .hbg::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(to bottom,transparent,var(--gold),transparent)}
 .hi{position:relative;z-index:2;width:100%;max-width:1200px;margin:0 auto;padding:120px 60px 80px;display:grid;grid-template-columns:1fr 430px;gap:52px;align-items:center}
 .hbadge{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(184,156,99,.38);border-radius:30px;padding:6px 15px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);background:rgba(184,156,99,.09);margin-bottom:24px}
@@ -218,7 +223,7 @@ header.sc{box-shadow:0 4px 28px rgba(15,23,42,.07)}
 @keyframes bk{0%,100%{opacity:1}50%{opacity:.15}}
 .hh1{font-size:var(--fs-h1);font-weight:900;line-height:1.06;letter-spacing:-.035em;color:#fff;margin-bottom:18px}
 .hh1 span{color:var(--gold);display:block}
-.hsub{font-size:var(--fs-body-lg);color:rgba(255,255,255,.68);line-height:1.7;max-width:500px;margin-bottom:32px}
+.hsub{font-size:var(--fs-body-lg);color:rgba(255,255,255,.68);line-height:1.95;max-width:520px;margin-bottom:38px}
 .hsub b{color:rgba(255,255,255,.9);font-weight:600}
 .hbtns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
 .htrust{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -229,20 +234,22 @@ header.sc{box-shadow:0 4px 28px rgba(15,23,42,.07)}
 .cbox,.ccard{background:rgba(255,255,255,.97);border:1px solid var(--bord);border-radius:var(--r4);padding:32px 28px;box-shadow:var(--shadow-float),0 0 0 1px rgba(255,255,255,.14)}
 .ct1{font-size:var(--fs-h3);font-weight:800;color:var(--navy);margin-bottom:4px}
 .ct2{font-size:var(--fs-body-md);color:var(--muted);margin-bottom:20px}
-.clbl{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.ciw{position:relative;margin-bottom:7px}
+#calcBody{display:flex;flex-direction:column;gap:16px}
+.cfield{display:flex;flex-direction:column;gap:8px}
+.clbl{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:0}
+.ciw{position:relative;margin-bottom:0}
 .ci{width:100%;border:1.5px solid var(--bord);border-radius:var(--r);padding:12px 38px 12px 14px;font-size:15px;font-weight:700;color:var(--navy);background:#fff;transition:border-color .25s,box-shadow .25s}
 .ci:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(198,169,107,.12)}
 .csfx{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:var(--muted);pointer-events:none}
-.crange{width:100%;accent-color:var(--gold);height:4px;border-radius:2px;margin-bottom:4px;cursor:pointer;display:block}
-.crl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px}
-.cres{background:var(--navy);border-radius:var(--r2);padding:16px;margin-bottom:14px}
+.crange{width:100%;accent-color:var(--gold);height:4px;border-radius:2px;cursor:pointer;display:block}
+.crl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.cres{background:var(--navy);border-radius:var(--r2);padding:16px;margin-bottom:0}
 .crow{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
 .crow:not(:last-child){border-bottom:1px solid rgba(255,255,255,.08)}
 .crl2{font-size:12px;color:rgba(255,255,255,.5)}
 .crv{font-size:14px;font-weight:800;color:#fff}
 .crv.big{color:var(--gold);font-size:21px}
-.cck{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:13px}
+.cck{display:flex;align-items:flex-start;gap:9px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:0}
 .cck input[type=checkbox]{width:16px;height:16px;margin-top:2px;accent-color:var(--gold);flex-shrink:0;cursor:pointer}
 .cck a{color:var(--gold)}
 
@@ -659,13 +666,12 @@ footer{background:var(--graph);padding:50px 0 26px}
       <h1 class="hh1">Финансирование под залог<br><span>недвижимости до 60%</span><br>от стоимости</h1>
       <p class="hsub"><b>Прямые инвестиции от партнёров. По 102-ФЗ.</b><br>Вы остаётесь собственником. Без банков, без отказов.</p>
       <div class="hbtns">
-        <button class="btn btn-n" onclick="document.getElementById('f1sec').scrollIntoView({behavior:'smooth'})">Рассчитать условия</button>
         <button class="btn btn-g" onclick="openPop()">Оставить заявку</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('f1sec').scrollIntoView({behavior:'smooth'})">Рассчитать условия</button>
       </div>
       <div class="htrust">
         <div class="ht"><div class="hti">⚡</div><span class="htt">Решение за 24 часа</span></div>
         <div class="ht"><div class="hti">🔒</div><span class="htt">Росреестр · 102-ФЗ</span></div>
-        <div class="ht"><div class="hti">📋</div><span class="htt">Прозрачный договор</span></div>
       </div>
     </div>
     <!-- КАЛЬКУЛЯТОР -->
@@ -673,28 +679,34 @@ footer{background:var(--graph);padding:50px 0 26px}
       <div class="ct1">Быстрый расчёт займа</div>
       <div class="ct2">Введите стоимость вашей недвижимости</div>
       <div id="calcBody">
-        <label class="clbl">Стоимость объекта</label>
-        <div class="ciw">
-          <input type="text" inputmode="numeric" class="ci" id="cV" value="5 000 000" oninput="calcUp()">
-          <span class="csfx">₽</span>
+        <div class="cfield">
+          <label class="clbl">Стоимость объекта</label>
+          <div class="ciw">
+            <input type="text" inputmode="numeric" class="ci" id="cV" value="5 000 000" oninput="calcUp()">
+            <span class="csfx">₽</span>
+          </div>
+          <input type="range" class="crange" id="cR" min="500000" max="50000000" step="500000" value="5000000"
+                 oninput="document.getElementById('cV').value=this.value;calcUp()">
+          <div class="crl"><span>500 тыс</span><span>50 млн ₽</span></div>
         </div>
-        <input type="range" class="crange" id="cR" min="500000" max="50000000" step="500000" value="5000000"
-               oninput="document.getElementById('cV').value=this.value;calcUp()">
-        <div class="crl"><span>500 тыс</span><span>50 млн ₽</span></div>
-        <label class="clbl">Срок займа</label>
-        <div class="ciw" style="margin-bottom:16px">
-          <input type="number" class="ci" id="cT" value="12" min="1" max="120" oninput="calcUp()">
-          <span class="csfx">мес</span>
+        <div class="cfield">
+          <label class="clbl">Срок займа</label>
+          <div class="ciw">
+            <input type="number" class="ci" id="cT" value="12" min="1" max="120" oninput="calcUp()">
+            <span class="csfx">мес</span>
+          </div>
         </div>
         <div class="cres">
           <div class="crow"><span class="crl2">Максимальная сумма (60%)</span><span class="crv big" id="rS">3 000 000 ₽</span></div>
           <div class="crow"><span class="crl2">Ставка от</span><span class="crv" id="rR">24%</span></div>
           <div class="crow"><span class="crl2">Платёж в месяц от</span><span class="crv" id="rM">283 679 ₽</span></div>
         </div>
-        <label class="clbl">Телефон</label>
-        <div class="fw" style="margin-bottom:10px">
-          <span class="flag">🇷🇺 ▾</span>
-          <input type="tel" placeholder="+7 (000) 000-00-00" id="cP">
+        <div class="cfield">
+          <label class="clbl">Телефон</label>
+          <div class="fw">
+            <span class="flag">🇷🇺 ▾</span>
+            <input type="tel" placeholder="+7 (000) 000-00-00" id="cP">
+          </div>
         </div>
         <div class="cck">
           <input type="checkbox" id="cA">
