@@ -57,8 +57,8 @@
   --fs-body-md:14px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.65;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;overflow-x:hidden;width:100%}
+body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.65;-webkit-font-smoothing:antialiased;width:100%;max-width:100%}
 a{text-decoration:none;color:inherit}
 /* ① все картинки адаптивны + lazy по умолчанию */
 img{max-width:100%;height:auto;display:block;object-fit:cover}
@@ -508,9 +508,10 @@ footer{background:var(--graph);padding:50px 0 26px}
 @keyframes fi{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 
 /* MOBILE STICKY */
-.mcta{display:none;position:fixed;bottom:0;inset-x:0;z-index:490;background:#fff;border-top:1px solid var(--bord);padding:10px 16px;box-shadow:0 -4px 20px rgba(15,23,42,.08)}
+.mcta{display:none;position:fixed;bottom:0;inset-x:0;z-index:490;background:transparent;border-top:none;padding:0 12px calc(env(safe-area-inset-bottom) + 12px);box-shadow:none;pointer-events:none}
 .mcta button{width:100%;background:var(--gold);border:none;border-radius:var(--r2);color:#fff;font-family:inherit;font-size:15px;font-weight:700;padding:13px;transition:background .25s;cursor:pointer}
 .mcta button:hover{background:var(--gold2)}
+.mcta button{pointer-events:auto}
 
 /* ═══════════════════════════════════════════════
    ② MEDIA QUERIES — полная адаптация
@@ -544,32 +545,33 @@ footer{background:var(--graph);padding:50px 0 26px}
 }
 /* ≤ 768px */
 @media(max-width:768px){
-  :root{--fs-h1:clamp(26px,8vw,40px);--fs-h2:clamp(22px,6vw,32px);--fs-body-lg:15px;--fs-body-md:13px}
+  :root{--fs-h1:clamp(24px,7.2vw,34px);--fs-h2:clamp(20px,5.8vw,28px);--fs-body-lg:14px;--fs-body-md:12.5px}
   header{padding:0 16px;height:60px}
   .mn{top:60px;right:0;left:auto;padding:18px 16px 24px;max-height:calc(100vh - 60px)}
   .W{padding:0 16px}
   .hn,#htelD,#hemD{display:none}
   .hcnt{display:none}
   .brg{display:flex}
-  section,.reviews,.f1sec,.f2sec,.contacts{padding:60px 0}
-  .hi{padding:84px 16px 44px}
+  section,.reviews,.f1sec,.f2sec,.contacts{padding:52px 0}
+  .hi{padding:78px 16px 36px}
   .hh1{font-size:var(--fs-h1)}
   .hsub{font-size:var(--fs-body-lg)}
   .hbtns{flex-direction:column;gap:10px}
   .hbtns .btn{width:100%;justify-content:center}
-  .cbox{padding:22px 16px}
+  .fi,.ci,.chat-input{font-size:16px}
+  .cbox{padding:18px 14px;border-radius:20px}
   .ogrid{grid-template-columns:1fr;gap:16px}
   .hsteps{grid-template-columns:1fr 1fr;gap:20px}
   .dsn{width:44px;height:44px;font-size:14px}
-  .vcol{padding:22px 16px}
-  .cbody{padding:18px 16px}
-  .f2box{padding:22px 16px}
+  .vcol{padding:18px 14px}
+  .cbody{padding:16px 14px}
+  .f2box{padding:18px 14px}
   .f1in{grid-template-columns:1fr}
   .congrid{grid-template-columns:1fr}
   .pop{padding:26px 18px}
   .fixbtn{display:none}
   .mcta{display:block}
-  body{padding-bottom:64px}
+  body{padding-bottom:72px}
   .hero::after,.how::after,.reviews::after{height:52px}
   .reviews::after{
     background-image:linear-gradient(180deg,rgba(248,250,252,0) 0%,rgba(255,255,255,.9) 100%);
@@ -578,7 +580,7 @@ footer{background:var(--graph);padding:50px 0 26px}
 }
 /* ≤ 375px */
 @media(max-width:375px){
-  :root{--fs-h1:25px;--fs-h2:22px}
+  :root{--fs-h1:22px;--fs-h2:19px}
   .hh1{font-size:var(--fs-h1)}.h2{font-size:var(--fs-h2)}
   .trow{grid-template-columns:1fr}
   .tc{border-right:none!important;border-top:1px solid rgba(255,255,255,.07)}
@@ -586,6 +588,13 @@ footer{background:var(--graph);padding:50px 0 26px}
   .hsteps{grid-template-columns:1fr}
   .fi2c{grid-template-columns:1fr}
   .fz2c{grid-template-columns:1fr}
+}
+
+@media(max-width:480px){
+  .btn{padding:12px 15px;font-size:13.5px}
+  .ct1{font-size:20px}
+  .ct2{margin-bottom:14px}
+  .chat-win{border-radius:16px}
 }
 
 /* ═══════════════════════════════════════════
@@ -1191,7 +1200,7 @@ footer{background:var(--graph);padding:50px 0 26px}
 
 <!-- Mobile sticky CTA -->
 <div class="mcta" id="mcta">
-  <button onclick="openPop()">Получить расчёт бесплатно →</button>
+  <button onclick="openPop()">Получить расчёт</button>
 </div>
 
 
