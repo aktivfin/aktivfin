@@ -315,10 +315,7 @@ header.sc{box-shadow:0 4px 28px rgba(15,23,42,.07)}
 .rwrap::before,.rwrap::after{content:'';position:absolute;top:0;bottom:0;width:90px;z-index:2;pointer-events:none}
 .rwrap::before{left:0;background:linear-gradient(to right,var(--bg),transparent)}
 .rwrap::after{right:0;background:linear-gradient(to left,var(--bg),transparent)}
-.rtrack{display:flex;gap:20px;width:max-content}
-@media(prefers-reduced-motion:no-preference){.rtrack{animation:rs 52s linear infinite}}
-.rtrack:hover{animation-play-state:paused}
-@keyframes rs{to{transform:translateX(-50%)}}
+.rtrack{display:flex;gap:20px;width:max-content;will-change:transform}
 .rcard{width:300px;flex-shrink:0;background:var(--white);border:1px solid var(--bord);border-radius:var(--r3);padding:32px 26px;transition:border-color .3s,box-shadow .3s}
 .rcard:hover{border-color:var(--bord2);box-shadow:var(--shadow-card)}
 .rstars{color:var(--gold);font-size:var(--fs-body-md);letter-spacing:2px;margin-bottom:14px}
@@ -807,7 +804,7 @@ footer{background:var(--graph);padding:50px 0 26px}
     <div class="sa"><span class="eyebrow">Клиенты о нас</span></div>
     <h2 class="h2 sa">Отзывы <em>клиентов</em></h2>
   </div>
-  <div class="rwrap" style="margin-top:38px">
+  <div class="rwrap" style="margin-top:38px" tabindex="0">
     <div class="rtrack">
       <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«Получил деньги под залог квартиры за 36 часов. Банк отказал из-за просрочек. Здесь оценили только объект — и одобрили.»</p><div class="rauth">Дмитрий К.</div><div class="rrole">Предприниматель, Пермь</div></div>
       <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«Оставил заявку в 9 утра — к вечеру деньги уже были на счёте. Никаких лишних документов, всё чётко.»</p><div class="rauth">Алексей В.</div><div class="rrole">Владелец ООО, Пермь</div></div>
@@ -815,11 +812,6 @@ footer{background:var(--graph);padding:50px 0 26px}
       <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«ИП без официального дохода. Одобрили под загородный дом за два дня. Очень быстро и без лишних вопросов.»</p><div class="rauth">Михаил Д.</div><div class="rrole">ИП, Пермский край</div></div>
       <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«Четыре банка отказали. Здесь посмотрели только квартиру и выдали нужную сумму. Рекомендую.»</p><div class="rauth">Андрей М.</div><div class="rrole">Инженер, Пермь</div></div>
       <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«Брал займ дважды. Оба раза — быстро, честно, без неожиданностей. Отличная работа команды.»</p><div class="rauth">Сергей Т.</div><div class="rrole">Собственник помещения</div></div>
-      <!-- дубль -->
-      <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«Получил деньги под залог квартиры за 36 часов. Банк отказал из-за просрочек. Здесь оценили только объект — и одобрили.»</p><div class="rauth">Дмитрий К.</div><div class="rrole">Предприниматель, Пермь</div></div>
-      <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«Оставил заявку в 9 утра — к вечеру деньги уже были на счёте. Никаких лишних документов, всё чётко.»</p><div class="rauth">Алексей В.</div><div class="rrole">Владелец ООО, Пермь</div></div>
-      <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«ИП без официального дохода. Одобрили под загородный дом за два дня.»</p><div class="rauth">Михаил Д.</div><div class="rrole">ИП, Пермский край</div></div>
-      <div class="rcard"><div class="rstars">★★★★★</div><p class="rtxt">«Брал займ дважды. Оба раза — быстро, честно, без неожиданностей.»</p><div class="rauth">Сергей Т.</div><div class="rrole">Собственник помещения</div></div>
     </div>
   </div>
 </section>
@@ -1189,6 +1181,54 @@ var cro = new IntersectionObserver(function(entries){
   });
 },{threshold:.7});
 document.querySelectorAll('.cu').forEach(function(el){cro.observe(el)});
+
+/* ── Автоскролл отзывов ───────────────── */
+(function(){
+  var wrap = document.querySelector('.rwrap');
+  var track = document.querySelector('.rtrack');
+  if(!wrap || !track) return;
+
+  var cards = Array.prototype.slice.call(track.querySelectorAll('.rcard'));
+  if(!cards.length) return;
+  cards.forEach(function(card){ track.appendChild(card.cloneNode(true)); });
+
+  var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reducedMotion) return;
+
+  var mobile = window.matchMedia('(max-width: 768px)').matches;
+  var speed = mobile ? 30 : 44; // px/sec
+  var offset = 0;
+  var half = track.scrollWidth / 2;
+  var paused = false;
+  var prev = performance.now();
+
+  function setPause(state){ paused = state; }
+  wrap.addEventListener('mouseenter', function(){ setPause(true); });
+  wrap.addEventListener('mouseleave', function(){ setPause(false); });
+  wrap.addEventListener('focusin', function(){ setPause(true); });
+  wrap.addEventListener('focusout', function(){ setPause(false); });
+
+  function recalc(){
+    half = track.scrollWidth / 2;
+    if(offset >= half){ offset = offset % half; }
+  }
+  window.addEventListener('resize', recalc);
+
+  function tick(now){
+    var dt = (now - prev) / 1000;
+    prev = now;
+
+    if(!paused){
+      offset += speed * dt;
+      if(offset >= half){ offset -= half; }
+      track.style.transform = 'translateX(' + (-offset) + 'px)';
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+})();
 
 /* ── Живой счётчик ──────────────────────── */
 var appN = 27;
