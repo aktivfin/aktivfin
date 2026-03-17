@@ -72,6 +72,44 @@ section{padding:100px 0}
 .faq{padding:80px 0}
 .f2sec{padding:100px 0}
 
+/* акцентные декоративные разделители между ключевыми блоками */
+.hero,.how,.reviews{position:relative}
+.hero::after,.how::after,.reviews::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+  height:78px;
+  pointer-events:none;
+  z-index:3;
+}
+/* hero → trust: мягкий диагональный срез с тёплым акцентом */
+.hero::after{
+  background:
+    linear-gradient(165deg,
+      rgba(15,23,42,0) 0%,
+      rgba(15,23,42,.18) 44%,
+      rgba(198,169,107,.18) 72%,
+      rgba(28,37,65,.42) 100%);
+}
+/* how → versus: диагональный срез в сторону тёмного блока */
+.how::after{
+  background:
+    linear-gradient(170deg,
+      rgba(248,250,252,0) 0%,
+      rgba(184,156,99,.16) 52%,
+      rgba(15,23,42,.36) 100%);
+}
+/* reviews → legal: лёгкая волна */
+.reviews::after{
+  height:86px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 110' preserveAspectRatio='none'%3E%3Cpath fill='%23ffffff' fill-opacity='0.95' d='M0,40 C180,105 320,8 520,42 C760,84 910,22 1110,50 C1260,72 1350,38 1440,20 L1440,110 L0,110 Z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:center bottom;
+  background-size:100% 100%;
+}
+
 /* ═══════════════════════════════════════════════
    SCROLL ANIMATIONS
 ═══════════════════════════════════════════════ */
@@ -516,6 +554,11 @@ footer{background:var(--graph);padding:50px 0 26px}
   .fixbtn{display:none}
   .mcta{display:block}
   body{padding-bottom:64px}
+  .hero::after,.how::after,.reviews::after{height:52px}
+  .reviews::after{
+    background-image:linear-gradient(180deg,rgba(248,250,252,0) 0%,rgba(255,255,255,.9) 100%);
+    background-size:100% 100%;
+  }
 }
 /* ≤ 375px */
 @media(max-width:375px){
