@@ -688,6 +688,7 @@ body.builder-edit-mode .builder-inspector{display:block}
 .builder-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
 .builder-inline-value{font-size:11px;color:var(--muted);margin-top:4px}
 .builder-empty{font-size:13px;color:var(--muted);line-height:1.6}
+.builder-lock-note{font-size:11px;color:rgba(255,255,255,.7);line-height:1.5;padding:10px 12px;border-radius:14px;background:rgba(184,156,99,.12);border:1px solid rgba(184,156,99,.2)}
 @media (max-width: 768px){
   body.builder-edit-mode{padding-top:24px;padding-left:24px}
   .builder-ruler-top{height:24px}
@@ -1274,6 +1275,7 @@ body.builder-edit-mode .builder-inspector{display:block}
     <button class="btn btn-g" type="button" id="builderSaveExit">Утвердить версию и перейти к просмотру</button>
     <button class="btn btn-n" type="button" id="builderCancelExit">Не сохранять и перейти к просмотру</button>
     <button class="btn btn-n" type="button" id="builderExportHtml">Скачать итоговый HTML</button>
+    <div class="builder-lock-note">Скачивание HTML защищено паролем. Текущий пароль: 1348.</div>
     <div class="builder-status" id="builderDirtyState">Нет несохранённых изменений.</div>
   </div>
 </div>
@@ -1299,10 +1301,11 @@ body.builder-edit-mode .builder-inspector{display:block}
 var BUILDER_STORAGE_KEY = 'aktivfin-builder-state-v2';
 var BUILDER_PRESET_STATE = window.BUILDER_PRESET_STATE || {};
 var BUILDER_GRID = 10;
+var BUILDER_EXPORT_PASSWORD = '1348';
 var BUILDER_SELECTORS = {
   text: 'h1,h2,h3,h4,h5,h6,p,.h2,.sec-lead,.hh1,.hsub,.ct1,.ct2,.dst,.dsd,.ctitle,.cdesc,.rtxt,.rauth,.rrole,.ldt,.lds,.lrt,.lrd,.bt1,.bt2,.fit,.fid,.fq,.fai,.fcopy,.freq p,.chat-name,.chat-status,.chat-msg,.tcl,.tcs,.ocity,.osum,.odet,.vtxt,.cnl,.cnv,.htt,.clbl,.crl2,.crv,.psub,.ptag,.ccity,.ctag,.vnm,.vbdg,.eyebrow,.hbadge,.tcn,.cntl,.zn,.zh,.zs',
   button: 'button,.btn,.fixbtn,.mcta button,.chat-btn,.chat-send',
-  block: 'section,.oc,.cc,.rcard,.f1box,.f2box,.finfo,.lr,.ldoc,.ds,.fi2,.cbox,.tc,.vcol,.pop,.chat-win,header,footer,.cntbox,.hi,.htrust,.cards,.faq .faq-item'
+  block: 'section,.oc,.cc,.rcard,.f1box,.f2box,.finfo,.lr,.ldoc,.ds,.fi2,.cbox,.tc,.vcol,.pop,.chat-win,header,footer,.cntbox,.hi,.htrust,.cards,.faq .faq-item,.hn,.mn'
 };
 var builderState = { mode: 'view', saved: {}, draft: {}, selectedId: null, counter: 0, dragging: null };
 var builderPalette = [
@@ -1332,7 +1335,7 @@ function builderAssignEditable(){
       if(!el.dataset.builderId){ builderState.counter += 1; el.dataset.builderId = 'builder-' + builderState.counter; }
       el.setAttribute('data-builder-highlight', type);
       if(type !== 'block' && el.dataset.builderBaseText === undefined){ el.dataset.builderBaseText = builderGetEditableText(el); }
-      ['color','fontSize','width','height','minHeight','transform','textAlign','left','top','maxWidth'].forEach(function(prop){
+      ['color','fontSize','width','height','minHeight','transform','textAlign','left','top','maxWidth','lineHeight','whiteSpace','marginTop','marginBottom','paddingTop','paddingBottom'].forEach(function(prop){
         var key = 'builderBase' + prop.charAt(0).toUpperCase() + prop.slice(1);
         if(el.dataset[key] === undefined){ el.dataset[key] = el.style[prop] || ''; }
       });
@@ -1343,11 +1346,15 @@ function builderAssignEditable(){
         var labelSource = el.querySelector('h1,h2,h3,h4,.bt1,.fit,.dst,.ctitle,.vnm,.chat-name') || el;
         el.dataset.builderLabel = (labelSource.textContent || el.tagName).trim().slice(0, 48) || 'Блок';
       }
+      if(type === 'block'){
+        var isFlowBlock = el.matches('section,header,footer,.hero,.how,.versus,.cases,.reviews,.legal,.faq,.f1sec,.f2sec,.objects,.contacts,.hi,.hn,.mn');
+        if(isFlowBlock){ el.dataset.builderFlow = 'true'; }
+      }
     });
   });
   document.querySelectorAll('[data-builder-text],[data-builder-button],[data-builder-block]').forEach(function(el){
     el.addEventListener('click', builderHandleSelect);
-    if(el.hasAttribute('data-builder-block')){ el.addEventListener('pointerdown', builderStartDragging); }
+    if(el.hasAttribute('data-builder-block') && el.dataset.builderFlow !== 'true'){ el.addEventListener('pointerdown', builderStartDragging); }
   });
 }
 function builderLoadState(){
@@ -1405,6 +1412,12 @@ function builderResetElementStyles(el){
   el.style.left = el.dataset.builderBaseLeft || '';
   el.style.top = el.dataset.builderBaseTop || '';
   el.style.maxWidth = el.dataset.builderBaseMaxWidth || '';
+  el.style.lineHeight = el.dataset.builderBaseLineHeight || '';
+  el.style.whiteSpace = el.dataset.builderBaseWhiteSpace || '';
+  el.style.marginTop = el.dataset.builderBaseMarginTop || '';
+  el.style.marginBottom = el.dataset.builderBaseMarginBottom || '';
+  el.style.paddingTop = el.dataset.builderBasePaddingTop || '';
+  el.style.paddingBottom = el.dataset.builderBasePaddingBottom || '';
   if(el.dataset.builderDisplayBase){ el.style.display = el.dataset.builderDisplayBase; }
 }
 function builderApplyConfigToElement(el, conf){
@@ -1416,6 +1429,12 @@ function builderApplyConfigToElement(el, conf){
   if(conf.minHeight !== undefined) el.style.minHeight = conf.minHeight;
   if(conf.textAlign !== undefined) el.style.textAlign = conf.textAlign;
   if(conf.maxWidth !== undefined) el.style.maxWidth = conf.maxWidth;
+  if(conf.lineHeight !== undefined) el.style.lineHeight = conf.lineHeight;
+  if(conf.whiteSpace !== undefined) el.style.whiteSpace = conf.whiteSpace;
+  if(conf.marginTop !== undefined) el.style.marginTop = conf.marginTop;
+  if(conf.marginBottom !== undefined) el.style.marginBottom = conf.marginBottom;
+  if(conf.paddingTop !== undefined) el.style.paddingTop = conf.paddingTop;
+  if(conf.paddingBottom !== undefined) el.style.paddingBottom = conf.paddingBottom;
   if(conf.offsetX !== undefined){ el.style.left = conf.offsetX + 'px'; }
   if(conf.offsetY !== undefined){ el.style.top = conf.offsetY + 'px'; }
   var sx = conf.scaleX !== undefined ? parseFloat(conf.scaleX) : 1;
@@ -1433,22 +1452,34 @@ function builderRenderInspector(){
   if(isText){
     html += '<div class="builder-split"><div class="builder-field"><label>Размер шрифта (px)</label><input id="builderFontSizeInput" type="number" min="10" max="96" value="' + builderGetNumericValue(el, 'fontSize') + '" /></div><div class="builder-field"><label>Цвет текста</label><select id="builderColorInput">' + builderPalette.map(function(item){ var selected = (state.color || '') === item.value ? ' selected' : ''; return '<option value="' + item.value + '"' + selected + '>' + item.label + '</option>'; }).join('') + '</select></div></div>';
     html += '<div class="builder-field"><label>Выравнивание текста</label><select id="builderTextAlignInput"><option value="">По умолчанию</option><option value="left"' + ((state.textAlign || el.style.textAlign) === 'left' ? ' selected' : '') + '>По левому краю</option><option value="center"' + ((state.textAlign || el.style.textAlign) === 'center' ? ' selected' : '') + '>По центру</option><option value="right"' + ((state.textAlign || el.style.textAlign) === 'right' ? ' selected' : '') + '>По правому краю</option></select></div>';
+    html += '<div class="builder-split"><div class="builder-field"><label>Макс. ширина текста (%)</label><input id="builderTextMaxWidthInput" type="range" min="30" max="100" step="5" value="' + builderGetPercentValue(el, state.maxWidth, 100) + '" /><div class="builder-inline-value" id="builderTextMaxWidthValue"></div></div><div class="builder-field"><label>Межстрочный интервал</label><input id="builderLineHeightInput" type="number" min="1" max="3" step="0.1" value="' + builderGetLineHeightValue(el, state) + '" /></div></div>';
+    html += '<div class="builder-field"><label>Перенос строк</label><select id="builderWhiteSpaceInput"><option value=""' + ((state.whiteSpace || el.style.whiteSpace || '') === '' ? ' selected' : '') + '>Авто</option><option value="normal"' + ((state.whiteSpace || el.style.whiteSpace) === 'normal' ? ' selected' : '') + '>Несколько строк</option><option value="nowrap"' + ((state.whiteSpace || el.style.whiteSpace) === 'nowrap' ? ' selected' : '') + '>Одна строка</option></select></div>';
   }
   if(isButton){ html += '<div class="builder-split"><div class="builder-field"><label>Ширина кнопки (%)</label><input id="builderWidthInput" type="range" min="20" max="100" step="5" value="' + builderGetPercentValue(el, state.width, 100) + '" /><div class="builder-inline-value" id="builderWidthValue"></div></div><div class="builder-field"><label>Высота кнопки (px)</label><input id="builderHeightInput" type="number" min="36" max="140" value="' + builderGetNumericValue(el, 'height') + '" /></div></div>'; }
   if(isBlock){
+    var isFlowBlock = el.dataset.builderFlow === 'true';
     html += '<div class="builder-split"><div class="builder-field"><label>Ширина блока (%)</label><input id="builderBlockWidthInput" type="range" min="30" max="100" step="5" value="' + builderGetPercentValue(el, state.width, 100) + '" /><div class="builder-inline-value" id="builderBlockWidthValue"></div></div><div class="builder-field"><label>Высота блока (px)</label><input id="builderBlockHeightInput" type="number" min="0" max="2000" value="' + builderGetNumericValue(el, 'minHeight') + '" /></div></div>';
-    html += '<div class="builder-split"><div class="builder-field"><label>Масштаб по ширине (%)</label><input id="builderScaleXInput" type="range" min="50" max="150" step="5" value="' + builderGetScaleAxisPercent(el, state, 'x') + '" /><div class="builder-inline-value" id="builderScaleXValue"></div></div><div class="builder-field"><label>Масштаб по высоте (%)</label><input id="builderScaleYInput" type="range" min="50" max="150" step="5" value="' + builderGetScaleAxisPercent(el, state, 'y') + '" /><div class="builder-inline-value" id="builderScaleYValue"></div></div></div>';
-    html += '<div class="builder-split"><div class="builder-field"><label>Смещение X (px)</label><input id="builderOffsetXInput" type="number" step="10" value="' + (state.offsetX || 0) + '" /></div><div class="builder-field"><label>Смещение Y (px)</label><input id="builderOffsetYInput" type="number" step="10" value="' + (state.offsetY || 0) + '" /></div></div>';
+    if(isFlowBlock){
+      html += '<div class="builder-split"><div class="builder-field"><label>Верхний отступ (px)</label><input id="builderMarginTopInput" type="number" step="10" value="' + builderGetNumericValue(el, 'marginTop') + '" /></div><div class="builder-field"><label>Нижний отступ (px)</label><input id="builderMarginBottomInput" type="number" step="10" value="' + builderGetNumericValue(el, 'marginBottom') + '" /></div></div>';
+      html += '<div class="builder-split"><div class="builder-field"><label>Внутренний верх (px)</label><input id="builderPaddingTopInput" type="number" step="10" value="' + builderGetNumericValue(el, 'paddingTop') + '" /></div><div class="builder-field"><label>Внутренний низ (px)</label><input id="builderPaddingBottomInput" type="number" step="10" value="' + builderGetNumericValue(el, 'paddingBottom') + '" /></div></div>';
+      html += '<div class="builder-empty">Для hero, меню, footer и секций отступы меняют реальную высоту блока и автоматически двигают следующий раздел ниже.</div>';
+    } else {
+      html += '<div class="builder-split"><div class="builder-field"><label>Масштаб по ширине (%)</label><input id="builderScaleXInput" type="range" min="50" max="150" step="5" value="' + builderGetScaleAxisPercent(el, state, 'x') + '" /><div class="builder-inline-value" id="builderScaleXValue"></div></div><div class="builder-field"><label>Масштаб по высоте (%)</label><input id="builderScaleYInput" type="range" min="50" max="150" step="5" value="' + builderGetScaleAxisPercent(el, state, 'y') + '" /><div class="builder-inline-value" id="builderScaleYValue"></div></div></div>';
+      html += '<div class="builder-split"><div class="builder-field"><label>Смещение X (px)</label><input id="builderOffsetXInput" type="number" step="10" value="' + (state.offsetX || 0) + '" /></div><div class="builder-field"><label>Смещение Y (px)</label><input id="builderOffsetYInput" type="number" step="10" value="' + (state.offsetY || 0) + '" /></div></div>';
+    }
   }
   fields.innerHTML = html; builderBindInspectorInputs(el, state, { isText:isText, isButton:isButton, isBlock:isBlock });
 }
 function builderBindInspectorInputs(el, state, flags){
   var textInput = document.getElementById('builderTextInput'); if(textInput && (flags.isText || flags.isButton)){ textInput.addEventListener('input', function(){ state.text = this.value; builderSetEditableText(el, this.value); builderUpdateDirtyState(); }); }
   if(flags.isText){
-    var fontSizeInput = document.getElementById('builderFontSizeInput'); var colorInput = document.getElementById('builderColorInput'); var textAlignInput = document.getElementById('builderTextAlignInput');
+    var fontSizeInput = document.getElementById('builderFontSizeInput'); var colorInput = document.getElementById('builderColorInput'); var textAlignInput = document.getElementById('builderTextAlignInput'); var textMaxWidthInput = document.getElementById('builderTextMaxWidthInput'); var lineHeightInput = document.getElementById('builderLineHeightInput'); var whiteSpaceInput = document.getElementById('builderWhiteSpaceInput');
     if(fontSizeInput){ fontSizeInput.addEventListener('input', function(){ state.fontSize = this.value ? this.value + 'px' : ''; el.style.fontSize = state.fontSize; builderUpdateDirtyState(); }); }
     if(colorInput){ colorInput.addEventListener('change', function(){ state.color = this.value; el.style.color = this.value; builderUpdateDirtyState(); }); }
     if(textAlignInput){ textAlignInput.addEventListener('change', function(){ state.textAlign = this.value; el.style.textAlign = this.value; builderUpdateDirtyState(); }); }
+    if(textMaxWidthInput){ builderBindPercentLabel(textMaxWidthInput, document.getElementById('builderTextMaxWidthValue')); textMaxWidthInput.addEventListener('input', function(){ state.maxWidth = this.value + '%'; el.style.maxWidth = state.maxWidth; builderUpdateDirtyState(); }); }
+    if(lineHeightInput){ lineHeightInput.addEventListener('input', function(){ state.lineHeight = this.value || ''; el.style.lineHeight = state.lineHeight; builderUpdateDirtyState(); }); }
+    if(whiteSpaceInput){ whiteSpaceInput.addEventListener('change', function(){ state.whiteSpace = this.value; el.style.whiteSpace = this.value; builderUpdateDirtyState(); }); }
   }
   if(flags.isButton){
     var widthInput = document.getElementById('builderWidthInput'); var heightInput = document.getElementById('builderHeightInput');
@@ -1456,13 +1487,20 @@ function builderBindInspectorInputs(el, state, flags){
     if(heightInput){ heightInput.addEventListener('input', function(){ state.height = this.value ? this.value + 'px' : ''; el.style.height = state.height; builderUpdateDirtyState(); }); }
   }
   if(flags.isBlock){
-    var blockWidthInput = document.getElementById('builderBlockWidthInput'); var blockHeightInput = document.getElementById('builderBlockHeightInput'); var scaleXInput = document.getElementById('builderScaleXInput'); var scaleYInput = document.getElementById('builderScaleYInput'); var offsetXInput = document.getElementById('builderOffsetXInput'); var offsetYInput = document.getElementById('builderOffsetYInput');
+    var isFlowBlock = el.dataset.builderFlow === 'true'; var blockWidthInput = document.getElementById('builderBlockWidthInput'); var blockHeightInput = document.getElementById('builderBlockHeightInput'); var scaleXInput = document.getElementById('builderScaleXInput'); var scaleYInput = document.getElementById('builderScaleYInput'); var offsetXInput = document.getElementById('builderOffsetXInput'); var offsetYInput = document.getElementById('builderOffsetYInput'); var marginTopInput = document.getElementById('builderMarginTopInput'); var marginBottomInput = document.getElementById('builderMarginBottomInput'); var paddingTopInput = document.getElementById('builderPaddingTopInput'); var paddingBottomInput = document.getElementById('builderPaddingBottomInput');
     if(blockWidthInput){ builderBindPercentLabel(blockWidthInput, document.getElementById('builderBlockWidthValue')); blockWidthInput.addEventListener('input', function(){ state.width = this.value + '%'; el.style.width = state.width; builderUpdateDirtyState(); }); }
     if(blockHeightInput){ blockHeightInput.addEventListener('input', function(){ state.minHeight = this.value ? this.value + 'px' : ''; el.style.minHeight = state.minHeight; builderUpdateDirtyState(); }); }
-    if(scaleXInput){ builderBindPercentLabel(scaleXInput, document.getElementById('builderScaleXValue')); scaleXInput.addEventListener('input', function(){ state.scaleX = (this.value / 100).toFixed(2); builderApplyScale(el, state); builderUpdateDirtyState(); }); }
-    if(scaleYInput){ builderBindPercentLabel(scaleYInput, document.getElementById('builderScaleYValue')); scaleYInput.addEventListener('input', function(){ state.scaleY = (this.value / 100).toFixed(2); builderApplyScale(el, state); builderUpdateDirtyState(); }); }
-    if(offsetXInput){ offsetXInput.addEventListener('input', function(){ state.offsetX = builderSnap(this.value); el.style.left = state.offsetX + 'px'; this.value = state.offsetX; builderUpdateDirtyState(); }); }
-    if(offsetYInput){ offsetYInput.addEventListener('input', function(){ state.offsetY = builderSnap(this.value); el.style.top = state.offsetY + 'px'; this.value = state.offsetY; builderUpdateDirtyState(); }); }
+    if(isFlowBlock){
+      if(marginTopInput){ marginTopInput.addEventListener('input', function(){ state.marginTop = this.value ? builderSnap(this.value) + 'px' : ''; el.style.marginTop = state.marginTop; this.value = this.value ? builderSnap(this.value) : ''; builderUpdateDirtyState(); }); }
+      if(marginBottomInput){ marginBottomInput.addEventListener('input', function(){ state.marginBottom = this.value ? builderSnap(this.value) + 'px' : ''; el.style.marginBottom = state.marginBottom; this.value = this.value ? builderSnap(this.value) : ''; builderUpdateDirtyState(); }); }
+      if(paddingTopInput){ paddingTopInput.addEventListener('input', function(){ state.paddingTop = this.value ? builderSnap(this.value) + 'px' : ''; el.style.paddingTop = state.paddingTop; this.value = this.value ? builderSnap(this.value) : ''; builderUpdateDirtyState(); }); }
+      if(paddingBottomInput){ paddingBottomInput.addEventListener('input', function(){ state.paddingBottom = this.value ? builderSnap(this.value) + 'px' : ''; el.style.paddingBottom = state.paddingBottom; this.value = this.value ? builderSnap(this.value) : ''; builderUpdateDirtyState(); }); }
+    } else {
+      if(scaleXInput){ builderBindPercentLabel(scaleXInput, document.getElementById('builderScaleXValue')); scaleXInput.addEventListener('input', function(){ state.scaleX = (this.value / 100).toFixed(2); builderApplyScale(el, state); builderUpdateDirtyState(); }); }
+      if(scaleYInput){ builderBindPercentLabel(scaleYInput, document.getElementById('builderScaleYValue')); scaleYInput.addEventListener('input', function(){ state.scaleY = (this.value / 100).toFixed(2); builderApplyScale(el, state); builderUpdateDirtyState(); }); }
+      if(offsetXInput){ offsetXInput.addEventListener('input', function(){ state.offsetX = builderSnap(this.value); el.style.left = state.offsetX + 'px'; this.value = state.offsetX; builderUpdateDirtyState(); }); }
+      if(offsetYInput){ offsetYInput.addEventListener('input', function(){ state.offsetY = builderSnap(this.value); el.style.top = state.offsetY + 'px'; this.value = state.offsetY; builderUpdateDirtyState(); }); }
+    }
   }
 }
 function builderBindPercentLabel(input, label){ if(!input || !label) return; var render=function(){ label.textContent = input.value + '%'; }; render(); input.addEventListener('input', render); }
@@ -1471,6 +1509,7 @@ function builderUpdateDirtyState(){ var dirty = JSON.stringify(builderState.draf
 function builderGetNumericValue(el, prop){ var conf = builderCurrentState()[el.dataset.builderId] || {}; var current = parseFloat(conf[prop] || getComputedStyle(el)[prop] || el.style[prop]); return isNaN(current) ? '' : Math.round(current); }
 function builderGetPercentValue(el, stored, fallback){ var raw = stored || el.style.width || getComputedStyle(el).width; if(typeof raw === 'string' && raw.indexOf('%') > -1) return parseInt(raw, 10) || fallback; return fallback; }
 function builderGetScaleAxisPercent(el, state, axis){ var key = axis === 'x' ? 'scaleX' : 'scaleY'; var raw = state[key]; if(raw) return Math.round(parseFloat(raw) * 100); var transform = el.style.transform || ''; var match = transform.match(/scale\(([^,]+),?\s*([^)]+)?\)/); if(match){ return Math.round(parseFloat(axis === 'x' ? match[1] : (match[2] || match[1])) * 100); } return 100; }
+function builderGetLineHeightValue(el, state){ var raw = state.lineHeight || el.style.lineHeight || getComputedStyle(el).lineHeight; var num = parseFloat(raw); if(!isNaN(num) && raw !== 'normal'){ return Math.round(num * 10) / 10; } return ''; }
 function builderGetEditableText(el){ var ownText = ''; Array.prototype.forEach.call(el.childNodes, function(node){ if(node.nodeType === Node.TEXT_NODE){ ownText += node.textContent; } }); ownText = ownText.replace(/\s+/g, ' ').trim(); return ownText || (el.textContent || '').replace(/\s+/g, ' ').trim(); }
 function builderSetEditableText(el, value){ var textNode = null; Array.prototype.forEach.call(el.childNodes, function(node){ if(!textNode && node.nodeType === Node.TEXT_NODE){ textNode = node; } }); if(textNode){ textNode.textContent = value + (el.children.length ? ' ' : ''); } else if(el.children.length){ el.insertBefore(document.createTextNode(value + ' '), el.firstChild); } else { el.textContent = value; } }
 function builderEscape(value){ return (value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -1479,7 +1518,7 @@ function builderStartDragging(event){ if(builderState.mode !== 'edit') return; i
 function builderHandlePointerMove(event){ if(!builderState.dragging || builderState.mode !== 'edit') return; var drag = builderState.dragging; var el = builderGetElement(drag.id); var state = builderEnsureEntry(drag.id); if(!el) return; state.offsetX = builderSnap(drag.originX + (event.clientX - drag.startX)); state.offsetY = builderSnap(drag.originY + (event.clientY - drag.startY)); el.style.left = state.offsetX + 'px'; el.style.top = state.offsetY + 'px'; var xInput = document.getElementById('builderOffsetXInput'); var yInput = document.getElementById('builderOffsetYInput'); if(xInput) xInput.value = state.offsetX; if(yInput) yInput.value = state.offsetY; builderUpdateDirtyState(); }
 function builderStopDragging(){ if(!builderState.dragging) return; var el = builderGetElement(builderState.dragging.id); if(el) el.classList.remove('builder-dragging'); builderState.dragging = null; }
 function builderSnap(value){ var num = parseFloat(value) || 0; return Math.round(num / BUILDER_GRID) * BUILDER_GRID; }
-function builderExportHtml(){ var draft = builderState.mode === 'edit' ? builderState.draft : builderState.saved; var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML; html = html.replace("var BUILDER_PRESET_STATE = window.BUILDER_PRESET_STATE || {};", "var BUILDER_PRESET_STATE = " + JSON.stringify(draft) + ";"); html = html.replace('id="builderPanel"', 'id="builderPanel" style="display:none"'); html = html.replace('id="builderInspector"', 'id="builderInspector" style="display:none"'); var blob = new Blob([html], { type: 'text/html;charset=utf-8' }); var link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'aktivfin-published.html'; link.click(); setTimeout(function(){ URL.revokeObjectURL(link.href); }, 1000); }
+function builderExportHtml(){ var pass = window.prompt('Введите пароль для скачивания HTML'); if(pass !== BUILDER_EXPORT_PASSWORD){ window.alert('Неверный пароль. Скачивание HTML отменено.'); return; } var draft = builderState.mode === 'edit' ? builderState.draft : builderState.saved; var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML; html = html.replace("var BUILDER_PRESET_STATE = window.BUILDER_PRESET_STATE || {};", "var BUILDER_PRESET_STATE = " + JSON.stringify(draft) + ";"); html = html.replace('id="builderPanel"', 'id="builderPanel" style="display:none"'); html = html.replace('id="builderInspector"', 'id="builderInspector" style="display:none"'); var blob = new Blob([html], { type: 'text/html;charset=utf-8' }); var link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'aktivfin-published.html'; link.click(); setTimeout(function(){ URL.revokeObjectURL(link.href); }, 1000); }
 
 document.addEventListener('DOMContentLoaded', builderInit);
 
