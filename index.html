@@ -231,7 +231,8 @@ header.sc{box-shadow:0 4px 28px rgba(15,23,42,.07)}
 .hbadge::before{content:'●';font-size:7px;animation:bk 2.5s infinite}
 @keyframes bk{0%,100%{opacity:1}50%{opacity:.15}}
 .hh1{font-size:var(--fs-h1);font-weight:900;line-height:1.06;letter-spacing:-.035em;color:#fff;margin-bottom:18px}
-.hh1 span{color:var(--gold);display:block}
+.hh1-line{display:block;color:inherit}
+.hh1-accent{color:var(--gold)}
 .hsub{font-size:var(--fs-body-lg);color:rgba(255,255,255,.68);line-height:1.95;max-width:520px;margin-bottom:38px}
 .hsub b{color:rgba(255,255,255,.9);font-weight:600}
 .hbtns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
@@ -266,7 +267,7 @@ header.sc{box-shadow:0 4px 28px rgba(15,23,42,.07)}
    TRUST BAR
 ═══════════════════════════════════════════════ */
 .tbar{background:var(--navy);padding:0}
-.trow{display:grid;grid-template-columns:repeat(4,1fr)}
+.trow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));transform-origin:top center;transition:transform var(--motion-base) var(--ease-standard),width var(--motion-base) var(--ease-standard);width:100%;margin:0 auto}
 .tc{padding:44px 40px;border-right:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:6px;transition:background .2s}
 .tc:last-child{border-right:none}
 .tc:hover{background:rgba(255,255,255,.04)}
@@ -744,7 +745,7 @@ body.builder-edit-mode .builder-inspector{display:block}
   <div class="hi">
     <div>
       <div class="hbadge">Прямое залоговое финансирование · 102-ФЗ · Пермь</div>
-      <h1 class="hh1">Финансирование под залог<br><span>недвижимости до 60%</span><br>от стоимости</h1>
+      <h1 class="hh1"><span class="hh1-line">Финансирование под залог</span><span class="hh1-line hh1-accent">недвижимости до 60%</span><span class="hh1-line">от стоимости</span></h1>
       <p class="hsub"><b>Прямые инвестиции от партнёров. По 102-ФЗ.</b><br>Вы остаётесь собственником. Без банков, без отказов.</p>
       <div class="hbtns">
         <button class="btn btn-g" onclick="openPop()">Оставить заявку</button>
@@ -1275,7 +1276,7 @@ body.builder-edit-mode .builder-inspector{display:block}
     <button class="btn btn-g" type="button" id="builderSaveExit">Утвердить версию и перейти к просмотру</button>
     <button class="btn btn-n" type="button" id="builderCancelExit">Не сохранять и перейти к просмотру</button>
     <button class="btn btn-n" type="button" id="builderExportHtml">Скачать итоговый HTML</button>
-    <div class="builder-lock-note">Скачивание HTML защищено паролем. Текущий пароль: 1348.</div>
+    <div class="builder-lock-note">Скачивание HTML защищено паролем.</div>
     <div class="builder-status" id="builderDirtyState">Нет несохранённых изменений.</div>
   </div>
 </div>
@@ -1298,14 +1299,15 @@ body.builder-edit-mode .builder-inspector{display:block}
 
 /* ── Конструктор сайта ───────────────────── */
 
-var BUILDER_STORAGE_KEY = 'aktivfin-builder-state-v2';
+var BUILDER_STORAGE_KEY = 'aktivfin-builder-state-v3';
 var BUILDER_PRESET_STATE = window.BUILDER_PRESET_STATE || {};
+var BUILDER_FORCE_PRESET = window.BUILDER_FORCE_PRESET || false;
 var BUILDER_GRID = 10;
 var BUILDER_EXPORT_PASSWORD = '1348';
 var BUILDER_SELECTORS = {
-  text: 'h1,h2,h3,h4,h5,h6,p,.h2,.sec-lead,.hh1,.hsub,.ct1,.ct2,.dst,.dsd,.ctitle,.cdesc,.rtxt,.rauth,.rrole,.ldt,.lds,.lrt,.lrd,.bt1,.bt2,.fit,.fid,.fq,.fai,.fcopy,.freq p,.chat-name,.chat-status,.chat-msg,.tcl,.tcs,.ocity,.osum,.odet,.vtxt,.cnl,.cnv,.htt,.clbl,.crl2,.crv,.psub,.ptag,.ccity,.ctag,.vnm,.vbdg,.eyebrow,.hbadge,.tcn,.cntl,.zn,.zh,.zs',
+  text: 'h1,h2,h3,h4,h5,h6,p,.h2,.sec-lead,.hh1-line,.hsub,.ct1,.ct2,.dst,.dsd,.ctitle,.cdesc,.rtxt,.rauth,.rrole,.ldt,.lds,.lrt,.lrd,.bt1,.bt2,.fit,.fid,.fq,.fai,.fcopy,.freq p,.chat-name,.chat-status,.chat-msg,.tcl,.tcs,.ocity,.osum,.odet,.vtxt,.cnl,.cnv,.htt,.clbl,.crl2,.crv,.psub,.ptag,.ccity,.ctag,.vnm,.vbdg,.eyebrow,.hbadge,.tcn .cu,.tcn .g,.cntl,.zn,.zh,.zs',
   button: 'button,.btn,.fixbtn,.mcta button,.chat-btn,.chat-send',
-  block: 'section,.oc,.cc,.rcard,.f1box,.f2box,.finfo,.lr,.ldoc,.ds,.fi2,.cbox,.tc,.vcol,.pop,.chat-win,header,footer,.cntbox,.hi,.htrust,.cards,.faq .faq-item,.hn,.mn'
+  block: 'section,.trow,.oc,.cc,.rcard,.f1box,.f2box,.finfo,.lr,.ldoc,.ds,.fi2,.cbox,.tc,.vcol,.pop,.chat-win,header,footer,.cntbox,.hi,.htrust,.cards,.faq .faq-item,.hn,.mn'
 };
 var builderState = { mode: 'view', saved: {}, draft: {}, selectedId: null, counter: 0, dragging: null };
 var builderPalette = [
@@ -1354,11 +1356,16 @@ function builderAssignEditable(){
   });
   document.querySelectorAll('[data-builder-text],[data-builder-button],[data-builder-block]').forEach(function(el){
     el.addEventListener('click', builderHandleSelect);
-    if(el.hasAttribute('data-builder-block') && el.dataset.builderFlow !== 'true'){ el.addEventListener('pointerdown', builderStartDragging); }
+    var canDrag = (el.hasAttribute('data-builder-block') && el.dataset.builderFlow !== 'true') || el.hasAttribute('data-builder-text');
+    if(canDrag){ el.addEventListener('pointerdown', builderStartDragging); }
   });
 }
 function builderLoadState(){
   try {
+    if(BUILDER_FORCE_PRESET){
+      builderState.saved = BUILDER_PRESET_STATE || {};
+      return;
+    }
     var raw = localStorage.getItem(BUILDER_STORAGE_KEY);
     var parsed = raw ? JSON.parse(raw) : {};
     builderState.saved = parsed.saved || BUILDER_PRESET_STATE || {};
@@ -1435,11 +1442,19 @@ function builderApplyConfigToElement(el, conf){
   if(conf.marginBottom !== undefined) el.style.marginBottom = conf.marginBottom;
   if(conf.paddingTop !== undefined) el.style.paddingTop = conf.paddingTop;
   if(conf.paddingBottom !== undefined) el.style.paddingBottom = conf.paddingBottom;
-  if(conf.offsetX !== undefined){ el.style.left = conf.offsetX + 'px'; }
-  if(conf.offsetY !== undefined){ el.style.top = conf.offsetY + 'px'; }
+  builderApplyTransform(el, conf);
+}
+
+function builderApplyTransform(el, conf){
+  var offsetX = conf.offsetX !== undefined ? parseFloat(conf.offsetX) : 0;
+  var offsetY = conf.offsetY !== undefined ? parseFloat(conf.offsetY) : 0;
   var sx = conf.scaleX !== undefined ? parseFloat(conf.scaleX) : 1;
   var sy = conf.scaleY !== undefined ? parseFloat(conf.scaleY) : 1;
-  if(sx !== 1 || sy !== 1){ el.style.transform = 'scale(' + sx + ',' + sy + ')'; el.style.transformOrigin = 'top left'; }
+  var transforms = [];
+  if(offsetX || offsetY){ transforms.push('translate(' + offsetX + 'px,' + offsetY + 'px)'); }
+  if(sx !== 1 || sy !== 1){ transforms.push('scale(' + sx + ',' + sy + ')'); }
+  el.style.transform = transforms.join(' ') || (el.dataset.builderBaseTransform || '');
+  if(transforms.length){ el.style.transformOrigin = 'top left'; }
 }
 function builderRenderInspector(){
   var fields = document.getElementById('builderFields'); var hint = document.getElementById('builderInspectorHint'); if(builderState.mode !== 'edit') return;
@@ -1454,6 +1469,8 @@ function builderRenderInspector(){
     html += '<div class="builder-field"><label>Выравнивание текста</label><select id="builderTextAlignInput"><option value="">По умолчанию</option><option value="left"' + ((state.textAlign || el.style.textAlign) === 'left' ? ' selected' : '') + '>По левому краю</option><option value="center"' + ((state.textAlign || el.style.textAlign) === 'center' ? ' selected' : '') + '>По центру</option><option value="right"' + ((state.textAlign || el.style.textAlign) === 'right' ? ' selected' : '') + '>По правому краю</option></select></div>';
     html += '<div class="builder-split"><div class="builder-field"><label>Макс. ширина текста (%)</label><input id="builderTextMaxWidthInput" type="range" min="30" max="100" step="5" value="' + builderGetPercentValue(el, state.maxWidth, 100) + '" /><div class="builder-inline-value" id="builderTextMaxWidthValue"></div></div><div class="builder-field"><label>Межстрочный интервал</label><input id="builderLineHeightInput" type="number" min="1" max="3" step="0.1" value="' + builderGetLineHeightValue(el, state) + '" /></div></div>';
     html += '<div class="builder-field"><label>Перенос строк</label><select id="builderWhiteSpaceInput"><option value=""' + ((state.whiteSpace || el.style.whiteSpace || '') === '' ? ' selected' : '') + '>Авто</option><option value="normal"' + ((state.whiteSpace || el.style.whiteSpace) === 'normal' ? ' selected' : '') + '>Несколько строк</option><option value="nowrap"' + ((state.whiteSpace || el.style.whiteSpace) === 'nowrap' ? ' selected' : '') + '>Одна строка</option></select></div>';
+    html += '<div class="builder-split"><div class="builder-field"><label>Смещение X (px)</label><input id="builderTextOffsetXInput" type="number" step="10" value="' + (state.offsetX || 0) + '" /></div><div class="builder-field"><label>Смещение Y (px)</label><input id="builderTextOffsetYInput" type="number" step="10" value="' + (state.offsetY || 0) + '" /></div></div>';
+    html += '<div class="builder-split"><div class="builder-field"><label>Масштаб X (%)</label><input id="builderTextScaleXInput" type="range" min="50" max="200" step="5" value="' + builderGetScaleAxisPercent(el, state, 'x') + '" /><div class="builder-inline-value" id="builderTextScaleXValue"></div></div><div class="builder-field"><label>Масштаб Y (%)</label><input id="builderTextScaleYInput" type="range" min="50" max="200" step="5" value="' + builderGetScaleAxisPercent(el, state, 'y') + '" /><div class="builder-inline-value" id="builderTextScaleYValue"></div></div></div>';
   }
   if(isButton){ html += '<div class="builder-split"><div class="builder-field"><label>Ширина кнопки (%)</label><input id="builderWidthInput" type="range" min="20" max="100" step="5" value="' + builderGetPercentValue(el, state.width, 100) + '" /><div class="builder-inline-value" id="builderWidthValue"></div></div><div class="builder-field"><label>Высота кнопки (px)</label><input id="builderHeightInput" type="number" min="36" max="140" value="' + builderGetNumericValue(el, 'height') + '" /></div></div>'; }
   if(isBlock){
@@ -1473,13 +1490,17 @@ function builderRenderInspector(){
 function builderBindInspectorInputs(el, state, flags){
   var textInput = document.getElementById('builderTextInput'); if(textInput && (flags.isText || flags.isButton)){ textInput.addEventListener('input', function(){ state.text = this.value; builderSetEditableText(el, this.value); builderUpdateDirtyState(); }); }
   if(flags.isText){
-    var fontSizeInput = document.getElementById('builderFontSizeInput'); var colorInput = document.getElementById('builderColorInput'); var textAlignInput = document.getElementById('builderTextAlignInput'); var textMaxWidthInput = document.getElementById('builderTextMaxWidthInput'); var lineHeightInput = document.getElementById('builderLineHeightInput'); var whiteSpaceInput = document.getElementById('builderWhiteSpaceInput');
+    var fontSizeInput = document.getElementById('builderFontSizeInput'); var colorInput = document.getElementById('builderColorInput'); var textAlignInput = document.getElementById('builderTextAlignInput'); var textMaxWidthInput = document.getElementById('builderTextMaxWidthInput'); var lineHeightInput = document.getElementById('builderLineHeightInput'); var whiteSpaceInput = document.getElementById('builderWhiteSpaceInput'); var textOffsetXInput = document.getElementById('builderTextOffsetXInput'); var textOffsetYInput = document.getElementById('builderTextOffsetYInput'); var textScaleXInput = document.getElementById('builderTextScaleXInput'); var textScaleYInput = document.getElementById('builderTextScaleYInput');
     if(fontSizeInput){ fontSizeInput.addEventListener('input', function(){ state.fontSize = this.value ? this.value + 'px' : ''; el.style.fontSize = state.fontSize; builderUpdateDirtyState(); }); }
     if(colorInput){ colorInput.addEventListener('change', function(){ state.color = this.value; el.style.color = this.value; builderUpdateDirtyState(); }); }
     if(textAlignInput){ textAlignInput.addEventListener('change', function(){ state.textAlign = this.value; el.style.textAlign = this.value; builderUpdateDirtyState(); }); }
     if(textMaxWidthInput){ builderBindPercentLabel(textMaxWidthInput, document.getElementById('builderTextMaxWidthValue')); textMaxWidthInput.addEventListener('input', function(){ state.maxWidth = this.value + '%'; el.style.maxWidth = state.maxWidth; builderUpdateDirtyState(); }); }
     if(lineHeightInput){ lineHeightInput.addEventListener('input', function(){ state.lineHeight = this.value || ''; el.style.lineHeight = state.lineHeight; builderUpdateDirtyState(); }); }
     if(whiteSpaceInput){ whiteSpaceInput.addEventListener('change', function(){ state.whiteSpace = this.value; el.style.whiteSpace = this.value; builderUpdateDirtyState(); }); }
+    if(textOffsetXInput){ textOffsetXInput.addEventListener('input', function(){ state.offsetX = builderSnap(this.value); builderApplyTransform(el, state); this.value = state.offsetX; builderUpdateDirtyState(); }); }
+    if(textOffsetYInput){ textOffsetYInput.addEventListener('input', function(){ state.offsetY = builderSnap(this.value); builderApplyTransform(el, state); this.value = state.offsetY; builderUpdateDirtyState(); }); }
+    if(textScaleXInput){ builderBindPercentLabel(textScaleXInput, document.getElementById('builderTextScaleXValue')); textScaleXInput.addEventListener('input', function(){ state.scaleX = (this.value / 100).toFixed(2); builderApplyTransform(el, state); builderUpdateDirtyState(); }); }
+    if(textScaleYInput){ builderBindPercentLabel(textScaleYInput, document.getElementById('builderTextScaleYValue')); textScaleYInput.addEventListener('input', function(){ state.scaleY = (this.value / 100).toFixed(2); builderApplyTransform(el, state); builderUpdateDirtyState(); }); }
   }
   if(flags.isButton){
     var widthInput = document.getElementById('builderWidthInput'); var heightInput = document.getElementById('builderHeightInput');
@@ -1498,13 +1519,13 @@ function builderBindInspectorInputs(el, state, flags){
     } else {
       if(scaleXInput){ builderBindPercentLabel(scaleXInput, document.getElementById('builderScaleXValue')); scaleXInput.addEventListener('input', function(){ state.scaleX = (this.value / 100).toFixed(2); builderApplyScale(el, state); builderUpdateDirtyState(); }); }
       if(scaleYInput){ builderBindPercentLabel(scaleYInput, document.getElementById('builderScaleYValue')); scaleYInput.addEventListener('input', function(){ state.scaleY = (this.value / 100).toFixed(2); builderApplyScale(el, state); builderUpdateDirtyState(); }); }
-      if(offsetXInput){ offsetXInput.addEventListener('input', function(){ state.offsetX = builderSnap(this.value); el.style.left = state.offsetX + 'px'; this.value = state.offsetX; builderUpdateDirtyState(); }); }
-      if(offsetYInput){ offsetYInput.addEventListener('input', function(){ state.offsetY = builderSnap(this.value); el.style.top = state.offsetY + 'px'; this.value = state.offsetY; builderUpdateDirtyState(); }); }
+      if(offsetXInput){ offsetXInput.addEventListener('input', function(){ state.offsetX = builderSnap(this.value); builderApplyTransform(el, state); this.value = state.offsetX; builderUpdateDirtyState(); }); }
+      if(offsetYInput){ offsetYInput.addEventListener('input', function(){ state.offsetY = builderSnap(this.value); builderApplyTransform(el, state); this.value = state.offsetY; builderUpdateDirtyState(); }); }
     }
   }
 }
 function builderBindPercentLabel(input, label){ if(!input || !label) return; var render=function(){ label.textContent = input.value + '%'; }; render(); input.addEventListener('input', render); }
-function builderApplyScale(el, state){ var sx = state.scaleX || '1.00'; var sy = state.scaleY || '1.00'; el.style.transform = 'scale(' + sx + ',' + sy + ')'; el.style.transformOrigin = 'top left'; }
+function builderApplyScale(el, state){ builderApplyTransform(el, state); }
 function builderUpdateDirtyState(){ var dirty = JSON.stringify(builderState.draft) !== JSON.stringify(builderState.saved); var label = document.getElementById('builderDirtyState'); if(label) label.textContent = dirty ? 'Есть несохранённые изменения.' : 'Нет несохранённых изменений.'; }
 function builderGetNumericValue(el, prop){ var conf = builderCurrentState()[el.dataset.builderId] || {}; var current = parseFloat(conf[prop] || getComputedStyle(el)[prop] || el.style[prop]); return isNaN(current) ? '' : Math.round(current); }
 function builderGetPercentValue(el, stored, fallback){ var raw = stored || el.style.width || getComputedStyle(el).width; if(typeof raw === 'string' && raw.indexOf('%') > -1) return parseInt(raw, 10) || fallback; return fallback; }
@@ -1515,10 +1536,10 @@ function builderSetEditableText(el, value){ var textNode = null; Array.prototype
 function builderEscape(value){ return (value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function builderUpdateRulers(){ var top = document.querySelector('.builder-ruler-top'); var left = document.querySelector('.builder-ruler-left'); if(!top || !left) return; var width = Math.max(window.innerWidth, 320); var height = Math.max(window.innerHeight, 320); var labelsX = []; for(var x = 50; x < width; x += 50){ labelsX.push('linear-gradient(to right, transparent ' + (x-12) + 'px, rgba(255,255,255,.75) ' + (x-12) + 'px, rgba(255,255,255,.75) ' + (x-11) + 'px, transparent ' + (x-11) + 'px)'); } var labelsY = []; for(var y = 50; y < height; y += 50){ labelsY.push('linear-gradient(to bottom, transparent ' + (y-12) + 'px, rgba(255,255,255,.75) ' + (y-12) + 'px, rgba(255,255,255,.75) ' + (y-11) + 'px, transparent ' + (y-11) + 'px)'); } top.style.setProperty('--builder-ruler-labels', labelsX.join(',')); left.style.setProperty('--builder-ruler-labels', labelsY.join(',')); }
 function builderStartDragging(event){ if(builderState.mode !== 'edit') return; if(event.target.closest('#builderPanel') || event.target.closest('#builderInspector')) return; var el = event.currentTarget; builderSelect(el.dataset.builderId); var state = builderEnsureEntry(el.dataset.builderId); builderState.dragging = { id: el.dataset.builderId, startX: event.clientX, startY: event.clientY, originX: state.offsetX || 0, originY: state.offsetY || 0 }; el.classList.add('builder-dragging'); event.preventDefault(); }
-function builderHandlePointerMove(event){ if(!builderState.dragging || builderState.mode !== 'edit') return; var drag = builderState.dragging; var el = builderGetElement(drag.id); var state = builderEnsureEntry(drag.id); if(!el) return; state.offsetX = builderSnap(drag.originX + (event.clientX - drag.startX)); state.offsetY = builderSnap(drag.originY + (event.clientY - drag.startY)); el.style.left = state.offsetX + 'px'; el.style.top = state.offsetY + 'px'; var xInput = document.getElementById('builderOffsetXInput'); var yInput = document.getElementById('builderOffsetYInput'); if(xInput) xInput.value = state.offsetX; if(yInput) yInput.value = state.offsetY; builderUpdateDirtyState(); }
+function builderHandlePointerMove(event){ if(!builderState.dragging || builderState.mode !== 'edit') return; var drag = builderState.dragging; var el = builderGetElement(drag.id); var state = builderEnsureEntry(drag.id); if(!el) return; state.offsetX = builderSnap(drag.originX + (event.clientX - drag.startX)); state.offsetY = builderSnap(drag.originY + (event.clientY - drag.startY)); builderApplyTransform(el, state); var xInput = document.getElementById('builderOffsetXInput'); var yInput = document.getElementById('builderOffsetYInput'); var textXInput = document.getElementById('builderTextOffsetXInput'); var textYInput = document.getElementById('builderTextOffsetYInput'); if(xInput) xInput.value = state.offsetX; if(yInput) yInput.value = state.offsetY; if(textXInput) textXInput.value = state.offsetX; if(textYInput) textYInput.value = state.offsetY; builderUpdateDirtyState(); }
 function builderStopDragging(){ if(!builderState.dragging) return; var el = builderGetElement(builderState.dragging.id); if(el) el.classList.remove('builder-dragging'); builderState.dragging = null; }
 function builderSnap(value){ var num = parseFloat(value) || 0; return Math.round(num / BUILDER_GRID) * BUILDER_GRID; }
-function builderExportHtml(){ var pass = window.prompt('Введите пароль для скачивания HTML'); if(pass !== BUILDER_EXPORT_PASSWORD){ window.alert('Неверный пароль. Скачивание HTML отменено.'); return; } var draft = builderState.mode === 'edit' ? builderState.draft : builderState.saved; var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML; html = html.replace("var BUILDER_PRESET_STATE = window.BUILDER_PRESET_STATE || {};", "var BUILDER_PRESET_STATE = " + JSON.stringify(draft) + ";"); html = html.replace('id="builderPanel"', 'id="builderPanel" style="display:none"'); html = html.replace('id="builderInspector"', 'id="builderInspector" style="display:none"'); var blob = new Blob([html], { type: 'text/html;charset=utf-8' }); var link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'aktivfin-published.html'; link.click(); setTimeout(function(){ URL.revokeObjectURL(link.href); }, 1000); }
+function builderExportHtml(){ var pass = window.prompt('Введите пароль для скачивания HTML'); if(pass !== BUILDER_EXPORT_PASSWORD){ window.alert('Неверный пароль. Скачивание HTML отменено.'); return; } var draft = builderState.mode === 'edit' ? builderState.draft : builderState.saved; builderApplyState(draft); var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML; html = html.replace("var BUILDER_PRESET_STATE = window.BUILDER_PRESET_STATE || {};", "var BUILDER_PRESET_STATE = " + JSON.stringify(draft) + ";"); html = html.replace("var BUILDER_FORCE_PRESET = window.BUILDER_FORCE_PRESET || false;", "var BUILDER_FORCE_PRESET = true;"); html = html.replace('id="builderPanel"', 'id="builderPanel" style="display:none"'); html = html.replace('id="builderInspector"', 'id="builderInspector" style="display:none"'); var blob = new Blob([html], { type: 'text/html;charset=utf-8' }); var link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'aktivfin-published.html'; link.click(); setTimeout(function(){ URL.revokeObjectURL(link.href); }, 1000); if(builderState.mode === 'view'){ builderApplyState(builderState.saved); } }
 
 document.addEventListener('DOMContentLoaded', builderInit);
 
