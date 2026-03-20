@@ -643,6 +643,55 @@ footer{background:var(--graph);padding:50px 0 26px}
   .oc:hover,.cc:hover,.btn:hover,.chat-btn:hover,.ds:hover .dsn{transform:none;box-shadow:none}
 }
 
+
+
+/* ═══════════════════════════════════════════════
+   SITE CONSTRUCTOR
+═══════════════════════════════════════════════ */
+body.builder-edit-mode{padding-top:28px;padding-left:28px}
+body.builder-edit-mode [data-builder-highlight],
+body.builder-edit-mode [data-builder-text],
+body.builder-edit-mode [data-builder-button],
+body.builder-edit-mode [data-builder-block]{transition:box-shadow var(--motion-fast),outline-color var(--motion-fast),background-color var(--motion-fast),transform var(--motion-fast),opacity var(--motion-fast)}
+body.builder-edit-mode [data-builder-highlight]:hover,
+body.builder-edit-mode [data-builder-text]:hover,
+body.builder-edit-mode [data-builder-button]:hover,
+body.builder-edit-mode [data-builder-block]:hover{outline:2px solid rgba(184,156,99,.9);outline-offset:4px;box-shadow:0 0 0 6px rgba(184,156,99,.12)}
+body.builder-edit-mode [data-builder-selected]{outline:2px solid var(--gold);outline-offset:5px;box-shadow:0 0 0 8px rgba(184,156,99,.18)!important}
+body.builder-edit-mode [data-builder-text],
+body.builder-edit-mode [data-builder-button],
+body.builder-edit-mode [data-builder-block]{cursor:pointer}
+.builder-ruler-top,.builder-ruler-left{position:fixed;z-index:1200;background-color:rgba(15,23,42,.96);pointer-events:none;opacity:0;transition:opacity var(--motion-fast)}
+body.builder-edit-mode .builder-ruler-top,body.builder-edit-mode .builder-ruler-left{opacity:1}
+.builder-ruler-top{top:0;left:0;right:0;height:28px;border-bottom:1px solid rgba(255,255,255,.08);background-image:repeating-linear-gradient(to right,rgba(255,255,255,.14) 0 1px,transparent 1px 10px,rgba(255,255,255,.28) 10px 11px,transparent 11px 50px)}
+.builder-ruler-left{top:0;left:0;bottom:0;width:28px;border-right:1px solid rgba(255,255,255,.08);background-image:repeating-linear-gradient(to bottom,rgba(255,255,255,.14) 0 1px,transparent 1px 10px,rgba(255,255,255,.28) 10px 11px,transparent 11px 50px)}
+.builder-ruler-top::after,.builder-ruler-left::after{content:'';position:absolute;inset:0;background-image:var(--builder-ruler-labels);opacity:.9}
+.builder-panel{position:fixed;top:50%;right:16px;transform:translateY(-50%);z-index:1300;width:min(320px,calc(100vw - 32px));display:flex;justify-content:flex-end;pointer-events:none}
+.builder-menu{pointer-events:auto;background:rgba(15,23,42,.96);color:#fff;border:1px solid rgba(184,156,99,.28);border-radius:24px 0 0 24px;padding:18px 16px;box-shadow:var(--shadow-float);display:flex;flex-direction:column;gap:12px;backdrop-filter:blur(18px) saturate(1.3)}
+.builder-menu h3{font-size:15px;font-weight:800;margin:0}
+.builder-menu p{font-size:12px;line-height:1.5;color:rgba(255,255,255,.7);margin:0}
+.builder-menu .btn{width:100%;font-size:13px;padding:12px 14px;border-radius:14px}
+.builder-status{font-size:11px;color:rgba(255,255,255,.56);padding-top:2px}
+.builder-inspector{position:fixed;left:44px;bottom:24px;z-index:1300;width:min(380px,calc(100vw - 68px));background:rgba(255,255,255,.98);border:1px solid rgba(184,156,99,.25);border-radius:22px;box-shadow:var(--shadow-float);padding:18px;display:none}
+body.builder-edit-mode .builder-inspector{display:block}
+.builder-inspector.hidden{display:none!important}
+.builder-inspector h4{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.builder-inspector .builder-hint{font-size:12px;color:var(--muted);margin-bottom:14px}
+.builder-fields{display:flex;flex-direction:column;gap:12px}
+.builder-field label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.builder-field input,.builder-field select{width:100%;border:1px solid var(--bord);border-radius:12px;padding:11px 12px;font:inherit;color:var(--navy);background:#fff}
+.builder-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.builder-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.builder-empty{font-size:13px;color:var(--muted);line-height:1.6}
+@media (max-width: 768px){
+  body.builder-edit-mode{padding-top:24px;padding-left:24px}
+  .builder-ruler-top{height:24px}
+  .builder-ruler-left{width:24px}
+  .builder-panel{top:auto;bottom:14px;right:14px;transform:none}
+  .builder-menu{border-radius:18px;padding:14px}
+  .builder-inspector{left:12px;right:12px;bottom:88px;width:auto}
+}
+
 </style>
 </head>
 <body>
@@ -1204,10 +1253,334 @@ footer{background:var(--graph);padding:50px 0 26px}
 </div>
 
 
+
+<div class="builder-ruler-top" aria-hidden="true"></div>
+<div class="builder-ruler-left" aria-hidden="true"></div>
+<div class="builder-panel" id="builderPanel">
+  <div class="builder-menu" id="builderMenuView">
+    <h3>Режим просмотра</h3>
+    <p>Откройте редактирование, чтобы менять тексты, кнопки и размеры блоков прямо на сайте.</p>
+    <button class="btn btn-g" type="button" id="builderStartEdit">Редактировать</button>
+    <div class="builder-status">Изменения сохраняются локально в этом браузере.</div>
+  </div>
+  <div class="builder-menu" id="builderMenuEdit" style="display:none">
+    <h3>Режим редактирования</h3>
+    <p>Выберите элемент на странице и настройте его в панели снизу.</p>
+    <button class="btn btn-g" type="button" id="builderSaveExit">Сохранить и перейти к просмотру</button>
+    <button class="btn btn-n" type="button" id="builderCancelExit">Не сохранять и перейти к просмотру</button>
+    <div class="builder-status" id="builderDirtyState">Нет несохранённых изменений.</div>
+  </div>
+</div>
+<div class="builder-inspector hidden" id="builderInspector">
+  <h4>Конструктор сайта</h4>
+  <div class="builder-hint" id="builderInspectorHint">В режиме редактирования кликните по любому редактируемому элементу.</div>
+  <div class="builder-fields" id="builderFields">
+    <div class="builder-empty">Доступно редактирование текста, цвета и размера шрифта, названий кнопок и ширины, а также названий и масштаба ключевых блоков.</div>
+  </div>
+  <div class="builder-actions">
+    <button class="btn btn-n" type="button" id="builderResetElement">Сбросить элемент</button>
+  </div>
+</div>
+
+
 <!-- ═══════════════════════════════════════════
      JAVASCRIPT
 ═══════════════════════════════════════════ -->
 <script>
+
+/* ── Конструктор сайта ───────────────────── */
+var BUILDER_STORAGE_KEY = 'aktivfin-builder-state-v1';
+var BUILDER_SELECTORS = {
+  text: 'h1,h2,h3,h4,h5,h6,p,.h2,.sec-lead,.hh1,.hsub,.ct1,.ct2,.dst,.dsd,.ctitle,.cdesc,.rtxt,.rauth,.rrole,.ldt,.lds,.lrt,.lrd,.bt1,.bt2,.fit,.fid,.fq,.fai,.fcopy,.freq p,.chat-name,.chat-status,.chat-msg,.tcl,.tcs,.ocity,.osum,.odet,.vtxt,.cnl,.cnv,.htt,.clbl,.crl2,.crv,.psub,.ptag,.ccity,.ctag,.vnm,.vbdg,.eyebrow,.hbadge,.tcn,.cntl,.zn,.zh,.zs',
+  button: 'button,.btn,.fixbtn,.mcta button,.chat-btn,.chat-send',
+  block: 'section,.oc,.cc,.rcard,.f1box,.f2box,.finfo,.lr,.ldoc,.ds,.fi2,.cbox,.tc,.vcol,.pop,.chat-win,header,footer,.cntbox'
+};
+var builderState = { mode: 'view', saved: {}, draft: {}, selectedId: null, counter: 0 };
+var builderPalette = [
+  { value: '', label: 'Текущий цвет' },
+  { value: 'var(--navy)', label: 'Тёмно-синий' },
+  { value: 'var(--gold)', label: 'Золотой' },
+  { value: '#FFFFFF', label: 'Белый' },
+  { value: 'var(--muted)', label: 'Приглушённый' },
+  { value: 'var(--text)', label: 'Основной текст' }
+];
+function builderInit(){
+  builderAssignEditable();
+  builderLoadState();
+  builderBindControls();
+  builderApplyState(builderState.saved);
+  builderSetMode('view', false);
+  builderUpdateDirtyState();
+  builderUpdateRulers();
+  window.addEventListener('resize', builderUpdateRulers);
+}
+function builderAssignEditable(){
+  Object.keys(BUILDER_SELECTORS).forEach(function(type){
+    document.querySelectorAll(BUILDER_SELECTORS[type]).forEach(function(el){
+      if(el.closest('#builderPanel') || el.closest('#builderInspector')) return;
+      if(!el.dataset.builderId){
+        builderState.counter += 1;
+        el.dataset.builderId = 'builder-' + builderState.counter;
+      }
+      el.setAttribute('data-builder-highlight', type);
+      if(type !== 'block' && el.dataset.builderBaseText === undefined){ el.dataset.builderBaseText = builderGetEditableText(el); }
+      if(el.dataset.builderBaseColor === undefined){ el.dataset.builderBaseColor = el.style.color || ''; }
+      if(el.dataset.builderBaseFontSize === undefined){ el.dataset.builderBaseFontSize = el.style.fontSize || ''; }
+      if(el.dataset.builderBaseWidth === undefined){ el.dataset.builderBaseWidth = el.style.width || ''; }
+      if(el.dataset.builderBaseTransform === undefined){ el.dataset.builderBaseTransform = el.style.transform || ''; }
+      el.setAttribute('data-builder-' + type, 'true');
+      if(type === 'text' && !el.dataset.builderLabel){ el.dataset.builderLabel = (el.textContent || 'Текст').trim().slice(0, 48) || 'Текст'; }
+      if(type === 'button' && !el.dataset.builderLabel){ el.dataset.builderLabel = (el.textContent || 'Кнопка').trim().slice(0, 48) || 'Кнопка'; }
+      if(type === 'block' && !el.dataset.builderLabel){
+        var labelSource = el.querySelector('h1,h2,h3,h4,.bt1,.fit,.dst,.ctitle,.vnm,.chat-name') || el;
+        el.dataset.builderLabel = (labelSource.textContent || el.tagName).trim().slice(0, 48) || 'Блок';
+      }
+    });
+  });
+  document.querySelectorAll('[data-builder-text],[data-builder-button],[data-builder-block]').forEach(function(el){
+    el.addEventListener('click', builderHandleSelect);
+  });
+}
+function builderLoadState(){
+  try {
+    var raw = localStorage.getItem(BUILDER_STORAGE_KEY);
+    if(!raw) return;
+    var parsed = JSON.parse(raw);
+    builderState.saved = parsed.saved || {};
+  } catch(e) { console.warn('Builder state load failed', e); }
+}
+function builderPersistState(){
+  localStorage.setItem(BUILDER_STORAGE_KEY, JSON.stringify({ saved: builderState.saved }));
+}
+function builderBindControls(){
+  document.getElementById('builderStartEdit').addEventListener('click', function(){
+    builderState.draft = JSON.parse(JSON.stringify(builderState.saved));
+    builderApplyState(builderState.draft);
+    builderSetMode('edit', true);
+  });
+  document.getElementById('builderSaveExit').addEventListener('click', function(){
+    builderState.saved = JSON.parse(JSON.stringify(builderState.draft));
+    builderPersistState();
+    builderApplyState(builderState.saved);
+    builderSetMode('view', false);
+  });
+  document.getElementById('builderCancelExit').addEventListener('click', function(){
+    builderState.draft = JSON.parse(JSON.stringify(builderState.saved));
+    builderApplyState(builderState.saved);
+    builderSetMode('view', false);
+  });
+  document.getElementById('builderResetElement').addEventListener('click', function(){
+    if(!builderState.selectedId || builderState.mode !== 'edit') return;
+    delete builderState.draft[builderState.selectedId];
+    builderApplyState(builderState.draft);
+    builderRenderInspector();
+    builderUpdateDirtyState();
+  });
+}
+function builderSetMode(mode, cloneSaved){
+  builderState.mode = mode;
+  if(mode === 'edit' && cloneSaved){ builderState.draft = JSON.parse(JSON.stringify(builderState.saved)); }
+  document.body.classList.toggle('builder-edit-mode', mode === 'edit');
+  document.getElementById('builderMenuView').style.display = mode === 'view' ? '' : 'none';
+  document.getElementById('builderMenuEdit').style.display = mode === 'edit' ? '' : 'none';
+  document.getElementById('builderInspector').classList.toggle('hidden', mode !== 'edit');
+  if(mode !== 'edit'){
+    builderClearSelection();
+  } else {
+    builderRenderInspector();
+  }
+}
+function builderHandleSelect(event){
+  if(builderState.mode !== 'edit') return;
+  var target = event.currentTarget;
+  if(target.closest('#builderPanel') || target.closest('#builderInspector')) return;
+  event.preventDefault();
+  event.stopPropagation();
+  builderSelect(target.dataset.builderId);
+}
+function builderSelect(id){
+  builderClearSelection();
+  builderState.selectedId = id;
+  var el = builderGetElement(id);
+  if(!el) return;
+  el.setAttribute('data-builder-selected', 'true');
+  builderRenderInspector();
+}
+function builderClearSelection(){
+  var prev = document.querySelector('[data-builder-selected]');
+  if(prev) prev.removeAttribute('data-builder-selected');
+  builderState.selectedId = null;
+}
+function builderGetElement(id){ return document.querySelector('[data-builder-id="' + id + '"]'); }
+function builderCurrentState(){ return builderState.mode === 'edit' ? builderState.draft : builderState.saved; }
+function builderEnsureEntry(id){
+  var state = builderCurrentState();
+  if(!state[id]) state[id] = {};
+  return state[id];
+}
+function builderApplyState(state){
+  document.querySelectorAll('[data-builder-id]').forEach(function(el){
+    var baseText = el.dataset.builderBaseText;
+    if(baseText !== undefined && (el.hasAttribute('data-builder-text') || el.hasAttribute('data-builder-button'))){ builderSetEditableText(el, baseText); }
+    el.style.color = el.dataset.builderBaseColor || '';
+    el.style.fontSize = el.dataset.builderBaseFontSize || '';
+    el.style.width = el.dataset.builderBaseWidth || '';
+    el.style.transform = el.dataset.builderBaseTransform || '';
+  });
+  Object.keys(state || {}).forEach(function(id){
+    var el = builderGetElement(id);
+    var conf = state[id];
+    if(!el || !conf) return;
+    if(conf.text !== undefined) builderSetEditableText(el, conf.text);
+    if(conf.color !== undefined) el.style.color = conf.color;
+    if(conf.fontSize !== undefined) el.style.fontSize = conf.fontSize;
+    if(conf.width !== undefined) el.style.width = conf.width;
+    if(conf.scale !== undefined) el.style.transform = 'scale(' + conf.scale + ')';
+  });
+  builderUpdateDirtyState();
+}
+function builderRenderInspector(){
+  var fields = document.getElementById('builderFields');
+  var hint = document.getElementById('builderInspectorHint');
+  if(builderState.mode !== 'edit') return;
+  if(!builderState.selectedId){
+    hint.textContent = 'Кликните по тексту, кнопке или блоку, чтобы отредактировать его.';
+    fields.innerHTML = '<div class="builder-empty">Доступно редактирование текста, размера шрифта, цвета, названия кнопок, ширины кнопок и масштаба блоков.</div>';
+    return;
+  }
+  var el = builderGetElement(builderState.selectedId);
+  if(!el){ return; }
+  var state = builderEnsureEntry(builderState.selectedId);
+  var isText = el.hasAttribute('data-builder-text');
+  var isButton = el.hasAttribute('data-builder-button');
+  var isBlock = el.hasAttribute('data-builder-block');
+  hint.textContent = 'Выбран элемент: ' + (el.dataset.builderLabel || el.tagName.toLowerCase()) + '.';
+  var html = '';
+  if(isText || isButton){
+    html += '<div class="builder-field"><label>' + (isButton ? 'Название кнопки' : 'Текст') + '</label><input id="builderTextInput" type="text" value="' + builderEscape(builderGetEditableText(el)) + '" /></div>';
+  }
+  if(isText){
+    html += '<div class="builder-split"><div class="builder-field"><label>Размер шрифта (px)</label><input id="builderFontSizeInput" type="number" min="10" max="96" value="' + builderGetNumericValue(el, 'fontSize') + '" /></div><div class="builder-field"><label>Цвет текста</label><select id="builderColorInput">' + builderPalette.map(function(item){
+      var selected = (state.color || '') === item.value ? ' selected' : '';
+      return '<option value="' + item.value + '"' + selected + '>' + item.label + '</option>';
+    }).join('') + '</select></div></div>';
+  }
+  if(isButton){
+    html += '<div class="builder-field"><label>Ширина кнопки (%)</label><input id="builderWidthInput" type="range" min="20" max="100" step="5" value="' + builderGetWidthPercent(el) + '" /></div>';
+  }
+  if(isBlock){
+    html += '<div class="builder-field"><label>Размер блока (%)</label><input id="builderScaleInput" type="range" min="80" max="120" step="5" value="' + builderGetScalePercent(el) + '" /></div>';
+  }
+  fields.innerHTML = html;
+  builderBindInspectorInputs(el, state, { isText:isText, isButton:isButton, isBlock:isBlock });
+}
+function builderBindInspectorInputs(el, state, flags){
+  var textInput = document.getElementById('builderTextInput');
+  if(textInput && (flags.isText || flags.isButton)){
+    textInput.addEventListener('input', function(){
+      state.text = this.value;
+      builderSetEditableText(el, this.value);
+      builderUpdateDirtyState();
+    });
+  }
+  if(flags.isText){
+    var fontSizeInput = document.getElementById('builderFontSizeInput');
+    var colorInput = document.getElementById('builderColorInput');
+    if(fontSizeInput){
+      fontSizeInput.addEventListener('input', function(){
+        state.fontSize = this.value ? this.value + 'px' : '';
+        el.style.fontSize = state.fontSize;
+        builderUpdateDirtyState();
+      });
+    }
+    if(colorInput){
+      colorInput.addEventListener('change', function(){
+        state.color = this.value;
+        el.style.color = this.value;
+        builderUpdateDirtyState();
+      });
+    }
+  }
+  if(flags.isButton){
+    var widthInput = document.getElementById('builderWidthInput');
+    if(widthInput){
+      widthInput.addEventListener('input', function(){
+        state.width = this.value + '%';
+        el.style.width = state.width;
+        builderUpdateDirtyState();
+      });
+    }
+  }
+  if(flags.isBlock){
+    var scaleInput = document.getElementById('builderScaleInput');
+    if(scaleInput){
+      scaleInput.addEventListener('input', function(){
+        state.scale = (this.value / 100).toFixed(2);
+        el.style.transform = 'scale(' + state.scale + ')';
+        builderUpdateDirtyState();
+      });
+    }
+  }
+}
+function builderUpdateDirtyState(){
+  var dirty = JSON.stringify(builderState.draft) !== JSON.stringify(builderState.saved);
+  var label = document.getElementById('builderDirtyState');
+  if(label) label.textContent = dirty ? 'Есть несохранённые изменения.' : 'Нет несохранённых изменений.';
+}
+function builderGetNumericValue(el, prop){
+  var current = parseFloat((builderCurrentState()[el.dataset.builderId] || {})[prop] || getComputedStyle(el)[prop]);
+  return isNaN(current) ? '' : Math.round(current);
+}
+function builderGetWidthPercent(el){
+  var raw = (builderCurrentState()[el.dataset.builderId] || {}).width || el.style.width || '100%';
+  return parseInt(raw, 10) || 100;
+}
+function builderGetScalePercent(el){
+  var raw = (builderCurrentState()[el.dataset.builderId] || {}).scale;
+  if(raw) return Math.round(parseFloat(raw) * 100);
+  var transform = el.style.transform || '';
+  var match = transform.match(/scale\(([^)]+)\)/);
+  return match ? Math.round(parseFloat(match[1]) * 100) : 100;
+}
+function builderGetEditableText(el){
+  var ownText = '';
+  Array.prototype.forEach.call(el.childNodes, function(node){
+    if(node.nodeType === Node.TEXT_NODE){ ownText += node.textContent; }
+  });
+  ownText = ownText.replace(/\s+/g, ' ').trim();
+  return ownText || (el.textContent || '').replace(/\s+/g, ' ').trim();
+}
+function builderSetEditableText(el, value){
+  var textNode = null;
+  Array.prototype.forEach.call(el.childNodes, function(node){
+    if(!textNode && node.nodeType === Node.TEXT_NODE){ textNode = node; }
+  });
+  if(textNode){
+    textNode.textContent = value + (el.children.length ? ' ' : '');
+  } else if(el.children.length){
+    el.insertBefore(document.createTextNode(value + ' '), el.firstChild);
+  } else {
+    el.textContent = value;
+  }
+}
+function builderEscape(value){
+  return (value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function builderUpdateRulers(){
+  var top = document.querySelector('.builder-ruler-top');
+  var left = document.querySelector('.builder-ruler-left');
+  if(!top || !left) return;
+  var width = Math.max(window.innerWidth, 320);
+  var height = Math.max(window.innerHeight, 320);
+  var labelsX = [];
+  for(var x = 50; x < width; x += 50){ labelsX.push('linear-gradient(to right, transparent ' + (x-12) + 'px, rgba(255,255,255,.75) ' + (x-12) + 'px, rgba(255,255,255,.75) ' + (x-11) + 'px, transparent ' + (x-11) + 'px)'); }
+  var labelsY = [];
+  for(var y = 50; y < height; y += 50){ labelsY.push('linear-gradient(to bottom, transparent ' + (y-12) + 'px, rgba(255,255,255,.75) ' + (y-12) + 'px, rgba(255,255,255,.75) ' + (y-11) + 'px, transparent ' + (y-11) + 'px)'); }
+  top.style.setProperty('--builder-ruler-labels', labelsX.join(','));
+  left.style.setProperty('--builder-ruler-labels', labelsY.join(','));
+}
+document.addEventListener('DOMContentLoaded', builderInit);
+
 /* ── Telegram helpers ───────────────────── */
 var TGURL = 'https://api.telegram.org/bot' + TG_TOKEN;
 function tgReady() { return TG_TOKEN !== 'ВСТАВЬТЕ_BOT_TOKEN'; }
