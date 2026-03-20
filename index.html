@@ -661,6 +661,9 @@ body.builder-edit-mode [data-builder-selected]{outline:2px solid var(--gold);out
 body.builder-edit-mode [data-builder-text],
 body.builder-edit-mode [data-builder-button],
 body.builder-edit-mode [data-builder-block]{cursor:pointer}
+body.builder-edit-mode [data-builder-block]{position:relative}
+body.builder-edit-mode [data-builder-selected][data-builder-block]{cursor:grab}
+body.builder-edit-mode [data-builder-selected][data-builder-block].builder-dragging{cursor:grabbing}
 .builder-ruler-top,.builder-ruler-left{position:fixed;z-index:1200;background-color:rgba(15,23,42,.96);pointer-events:none;opacity:0;transition:opacity var(--motion-fast)}
 body.builder-edit-mode .builder-ruler-top,body.builder-edit-mode .builder-ruler-left{opacity:1}
 .builder-ruler-top{top:0;left:0;right:0;height:28px;border-bottom:1px solid rgba(255,255,255,.08);background-image:repeating-linear-gradient(to right,rgba(255,255,255,.14) 0 1px,transparent 1px 10px,rgba(255,255,255,.28) 10px 11px,transparent 11px 50px)}
@@ -679,9 +682,11 @@ body.builder-edit-mode .builder-inspector{display:block}
 .builder-inspector .builder-hint{font-size:12px;color:var(--muted);margin-bottom:14px}
 .builder-fields{display:flex;flex-direction:column;gap:12px}
 .builder-field label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.builder-field input,.builder-field select{width:100%;border:1px solid var(--bord);border-radius:12px;padding:11px 12px;font:inherit;color:var(--navy);background:#fff}
+.builder-field input,.builder-field select,.builder-field textarea{width:100%;border:1px solid var(--bord);border-radius:12px;padding:11px 12px;font:inherit;color:var(--navy);background:#fff}
+.builder-field textarea{min-height:92px;resize:vertical}
 .builder-split{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.builder-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.builder-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.builder-inline-value{font-size:11px;color:var(--muted);margin-top:4px}
 .builder-empty{font-size:13px;color:var(--muted);line-height:1.6}
 @media (max-width: 768px){
   body.builder-edit-mode{padding-top:24px;padding-left:24px}
@@ -1259,15 +1264,16 @@ body.builder-edit-mode .builder-inspector{display:block}
 <div class="builder-panel" id="builderPanel">
   <div class="builder-menu" id="builderMenuView">
     <h3>Режим просмотра</h3>
-    <p>Откройте редактирование, чтобы менять тексты, кнопки и размеры блоков прямо на сайте.</p>
+    <p>Откройте редактирование, чтобы менять тексты, размеры, выравнивание и положение блоков прямо на сайте.</p>
     <button class="btn btn-g" type="button" id="builderStartEdit">Редактировать</button>
-    <div class="builder-status">Изменения сохраняются локально в этом браузере.</div>
+    <div class="builder-status">Просмотр применяет последнюю утверждённую версию. Для GitHub можно скачать готовый HTML.</div>
   </div>
   <div class="builder-menu" id="builderMenuEdit" style="display:none">
     <h3>Режим редактирования</h3>
-    <p>Выберите элемент на странице и настройте его в панели снизу.</p>
-    <button class="btn btn-g" type="button" id="builderSaveExit">Сохранить и перейти к просмотру</button>
+    <p>Выберите элемент на странице, тяните блоки мышью по сетке и настройте параметры в панели снизу.</p>
+    <button class="btn btn-g" type="button" id="builderSaveExit">Утвердить версию и перейти к просмотру</button>
     <button class="btn btn-n" type="button" id="builderCancelExit">Не сохранять и перейти к просмотру</button>
+    <button class="btn btn-n" type="button" id="builderExportHtml">Скачать итоговый HTML</button>
     <div class="builder-status" id="builderDirtyState">Нет несохранённых изменений.</div>
   </div>
 </div>
@@ -1275,7 +1281,7 @@ body.builder-edit-mode .builder-inspector{display:block}
   <h4>Конструктор сайта</h4>
   <div class="builder-hint" id="builderInspectorHint">В режиме редактирования кликните по любому редактируемому элементу.</div>
   <div class="builder-fields" id="builderFields">
-    <div class="builder-empty">Доступно редактирование текста, цвета и размера шрифта, названий кнопок и ширины, а также названий и масштаба ключевых блоков.</div>
+    <div class="builder-empty">Доступно редактирование текста как в Word, размеров по ширине/высоте, перемещение блоков по сетке и утверждение финальной версии сайта.</div>
   </div>
   <div class="builder-actions">
     <button class="btn btn-n" type="button" id="builderResetElement">Сбросить элемент</button>
@@ -1289,13 +1295,16 @@ body.builder-edit-mode .builder-inspector{display:block}
 <script>
 
 /* ── Конструктор сайта ───────────────────── */
-var BUILDER_STORAGE_KEY = 'aktivfin-builder-state-v1';
+
+var BUILDER_STORAGE_KEY = 'aktivfin-builder-state-v2';
+var BUILDER_PRESET_STATE = window.BUILDER_PRESET_STATE || {};
+var BUILDER_GRID = 10;
 var BUILDER_SELECTORS = {
   text: 'h1,h2,h3,h4,h5,h6,p,.h2,.sec-lead,.hh1,.hsub,.ct1,.ct2,.dst,.dsd,.ctitle,.cdesc,.rtxt,.rauth,.rrole,.ldt,.lds,.lrt,.lrd,.bt1,.bt2,.fit,.fid,.fq,.fai,.fcopy,.freq p,.chat-name,.chat-status,.chat-msg,.tcl,.tcs,.ocity,.osum,.odet,.vtxt,.cnl,.cnv,.htt,.clbl,.crl2,.crv,.psub,.ptag,.ccity,.ctag,.vnm,.vbdg,.eyebrow,.hbadge,.tcn,.cntl,.zn,.zh,.zs',
   button: 'button,.btn,.fixbtn,.mcta button,.chat-btn,.chat-send',
-  block: 'section,.oc,.cc,.rcard,.f1box,.f2box,.finfo,.lr,.ldoc,.ds,.fi2,.cbox,.tc,.vcol,.pop,.chat-win,header,footer,.cntbox'
+  block: 'section,.oc,.cc,.rcard,.f1box,.f2box,.finfo,.lr,.ldoc,.ds,.fi2,.cbox,.tc,.vcol,.pop,.chat-win,header,footer,.cntbox,.hi,.htrust,.cards,.faq .faq-item'
 };
-var builderState = { mode: 'view', saved: {}, draft: {}, selectedId: null, counter: 0 };
+var builderState = { mode: 'view', saved: {}, draft: {}, selectedId: null, counter: 0, dragging: null };
 var builderPalette = [
   { value: '', label: 'Текущий цвет' },
   { value: 'var(--navy)', label: 'Тёмно-синий' },
@@ -1313,21 +1322,20 @@ function builderInit(){
   builderUpdateDirtyState();
   builderUpdateRulers();
   window.addEventListener('resize', builderUpdateRulers);
+  document.addEventListener('pointermove', builderHandlePointerMove);
+  document.addEventListener('pointerup', builderStopDragging);
 }
 function builderAssignEditable(){
   Object.keys(BUILDER_SELECTORS).forEach(function(type){
     document.querySelectorAll(BUILDER_SELECTORS[type]).forEach(function(el){
       if(el.closest('#builderPanel') || el.closest('#builderInspector')) return;
-      if(!el.dataset.builderId){
-        builderState.counter += 1;
-        el.dataset.builderId = 'builder-' + builderState.counter;
-      }
+      if(!el.dataset.builderId){ builderState.counter += 1; el.dataset.builderId = 'builder-' + builderState.counter; }
       el.setAttribute('data-builder-highlight', type);
       if(type !== 'block' && el.dataset.builderBaseText === undefined){ el.dataset.builderBaseText = builderGetEditableText(el); }
-      if(el.dataset.builderBaseColor === undefined){ el.dataset.builderBaseColor = el.style.color || ''; }
-      if(el.dataset.builderBaseFontSize === undefined){ el.dataset.builderBaseFontSize = el.style.fontSize || ''; }
-      if(el.dataset.builderBaseWidth === undefined){ el.dataset.builderBaseWidth = el.style.width || ''; }
-      if(el.dataset.builderBaseTransform === undefined){ el.dataset.builderBaseTransform = el.style.transform || ''; }
+      ['color','fontSize','width','height','minHeight','transform','textAlign','left','top','maxWidth'].forEach(function(prop){
+        var key = 'builderBase' + prop.charAt(0).toUpperCase() + prop.slice(1);
+        if(el.dataset[key] === undefined){ el.dataset[key] = el.style[prop] || ''; }
+      });
       el.setAttribute('data-builder-' + type, 'true');
       if(type === 'text' && !el.dataset.builderLabel){ el.dataset.builderLabel = (el.textContent || 'Текст').trim().slice(0, 48) || 'Текст'; }
       if(type === 'button' && !el.dataset.builderLabel){ el.dataset.builderLabel = (el.textContent || 'Кнопка').trim().slice(0, 48) || 'Кнопка'; }
@@ -1339,43 +1347,24 @@ function builderAssignEditable(){
   });
   document.querySelectorAll('[data-builder-text],[data-builder-button],[data-builder-block]').forEach(function(el){
     el.addEventListener('click', builderHandleSelect);
+    if(el.hasAttribute('data-builder-block')){ el.addEventListener('pointerdown', builderStartDragging); }
   });
 }
 function builderLoadState(){
   try {
     var raw = localStorage.getItem(BUILDER_STORAGE_KEY);
-    if(!raw) return;
-    var parsed = JSON.parse(raw);
-    builderState.saved = parsed.saved || {};
-  } catch(e) { console.warn('Builder state load failed', e); }
+    var parsed = raw ? JSON.parse(raw) : {};
+    builderState.saved = parsed.saved || BUILDER_PRESET_STATE || {};
+    if(!raw && Object.keys(BUILDER_PRESET_STATE || {}).length){ builderPersistState(); }
+  } catch(e) { builderState.saved = BUILDER_PRESET_STATE || {}; console.warn('Builder state load failed', e); }
 }
-function builderPersistState(){
-  localStorage.setItem(BUILDER_STORAGE_KEY, JSON.stringify({ saved: builderState.saved }));
-}
+function builderPersistState(){ localStorage.setItem(BUILDER_STORAGE_KEY, JSON.stringify({ saved: builderState.saved })); }
 function builderBindControls(){
-  document.getElementById('builderStartEdit').addEventListener('click', function(){
-    builderState.draft = JSON.parse(JSON.stringify(builderState.saved));
-    builderApplyState(builderState.draft);
-    builderSetMode('edit', true);
-  });
-  document.getElementById('builderSaveExit').addEventListener('click', function(){
-    builderState.saved = JSON.parse(JSON.stringify(builderState.draft));
-    builderPersistState();
-    builderApplyState(builderState.saved);
-    builderSetMode('view', false);
-  });
-  document.getElementById('builderCancelExit').addEventListener('click', function(){
-    builderState.draft = JSON.parse(JSON.stringify(builderState.saved));
-    builderApplyState(builderState.saved);
-    builderSetMode('view', false);
-  });
-  document.getElementById('builderResetElement').addEventListener('click', function(){
-    if(!builderState.selectedId || builderState.mode !== 'edit') return;
-    delete builderState.draft[builderState.selectedId];
-    builderApplyState(builderState.draft);
-    builderRenderInspector();
-    builderUpdateDirtyState();
-  });
+  document.getElementById('builderStartEdit').addEventListener('click', function(){ builderState.draft = JSON.parse(JSON.stringify(builderState.saved)); builderApplyState(builderState.draft); builderSetMode('edit', false); });
+  document.getElementById('builderSaveExit').addEventListener('click', function(){ builderState.saved = JSON.parse(JSON.stringify(builderState.draft)); builderPersistState(); builderApplyState(builderState.saved); builderSetMode('view', false); });
+  document.getElementById('builderCancelExit').addEventListener('click', function(){ builderState.draft = JSON.parse(JSON.stringify(builderState.saved)); builderApplyState(builderState.saved); builderSetMode('view', false); });
+  document.getElementById('builderResetElement').addEventListener('click', function(){ if(!builderState.selectedId || builderState.mode !== 'edit') return; delete builderState.draft[builderState.selectedId]; builderApplyState(builderState.draft); builderRenderInspector(); builderUpdateDirtyState(); });
+  document.getElementById('builderExportHtml').addEventListener('click', builderExportHtml);
 }
 function builderSetMode(mode, cloneSaved){
   builderState.mode = mode;
@@ -1384,201 +1373,114 @@ function builderSetMode(mode, cloneSaved){
   document.getElementById('builderMenuView').style.display = mode === 'view' ? '' : 'none';
   document.getElementById('builderMenuEdit').style.display = mode === 'edit' ? '' : 'none';
   document.getElementById('builderInspector').classList.toggle('hidden', mode !== 'edit');
-  if(mode !== 'edit'){
-    builderClearSelection();
-  } else {
-    builderRenderInspector();
-  }
+  if(mode !== 'edit'){ builderStopDragging(); builderClearSelection(); } else { builderRenderInspector(); }
 }
 function builderHandleSelect(event){
   if(builderState.mode !== 'edit') return;
   var target = event.currentTarget;
   if(target.closest('#builderPanel') || target.closest('#builderInspector')) return;
-  event.preventDefault();
-  event.stopPropagation();
-  builderSelect(target.dataset.builderId);
+  event.preventDefault(); event.stopPropagation(); builderSelect(target.dataset.builderId);
 }
-function builderSelect(id){
-  builderClearSelection();
-  builderState.selectedId = id;
-  var el = builderGetElement(id);
-  if(!el) return;
-  el.setAttribute('data-builder-selected', 'true');
-  builderRenderInspector();
-}
-function builderClearSelection(){
-  var prev = document.querySelector('[data-builder-selected]');
-  if(prev) prev.removeAttribute('data-builder-selected');
-  builderState.selectedId = null;
-}
+function builderSelect(id){ builderClearSelection(); builderState.selectedId = id; var el = builderGetElement(id); if(!el) return; el.setAttribute('data-builder-selected', 'true'); builderRenderInspector(); }
+function builderClearSelection(){ var prev = document.querySelector('[data-builder-selected]'); if(prev) prev.removeAttribute('data-builder-selected'); builderState.selectedId = null; }
 function builderGetElement(id){ return document.querySelector('[data-builder-id="' + id + '"]'); }
 function builderCurrentState(){ return builderState.mode === 'edit' ? builderState.draft : builderState.saved; }
-function builderEnsureEntry(id){
-  var state = builderCurrentState();
-  if(!state[id]) state[id] = {};
-  return state[id];
-}
+function builderEnsureEntry(id){ var state = builderCurrentState(); if(!state[id]) state[id] = {}; return state[id]; }
 function builderApplyState(state){
   document.querySelectorAll('[data-builder-id]').forEach(function(el){
-    var baseText = el.dataset.builderBaseText;
-    if(baseText !== undefined && (el.hasAttribute('data-builder-text') || el.hasAttribute('data-builder-button'))){ builderSetEditableText(el, baseText); }
-    el.style.color = el.dataset.builderBaseColor || '';
-    el.style.fontSize = el.dataset.builderBaseFontSize || '';
-    el.style.width = el.dataset.builderBaseWidth || '';
-    el.style.transform = el.dataset.builderBaseTransform || '';
+    if(el.dataset.builderBaseText !== undefined && (el.hasAttribute('data-builder-text') || el.hasAttribute('data-builder-button'))){ builderSetEditableText(el, el.dataset.builderBaseText); }
+    builderResetElementStyles(el);
   });
-  Object.keys(state || {}).forEach(function(id){
-    var el = builderGetElement(id);
-    var conf = state[id];
-    if(!el || !conf) return;
-    if(conf.text !== undefined) builderSetEditableText(el, conf.text);
-    if(conf.color !== undefined) el.style.color = conf.color;
-    if(conf.fontSize !== undefined) el.style.fontSize = conf.fontSize;
-    if(conf.width !== undefined) el.style.width = conf.width;
-    if(conf.scale !== undefined) el.style.transform = 'scale(' + conf.scale + ')';
-  });
+  Object.keys(state || {}).forEach(function(id){ var el = builderGetElement(id); var conf = state[id]; if(!el || !conf) return; builderApplyConfigToElement(el, conf); });
   builderUpdateDirtyState();
 }
+function builderResetElementStyles(el){
+  el.style.color = el.dataset.builderBaseColor || '';
+  el.style.fontSize = el.dataset.builderBaseFontSize || '';
+  el.style.width = el.dataset.builderBaseWidth || '';
+  el.style.height = el.dataset.builderBaseHeight || '';
+  el.style.minHeight = el.dataset.builderBaseMinHeight || '';
+  el.style.transform = el.dataset.builderBaseTransform || '';
+  el.style.textAlign = el.dataset.builderBaseTextAlign || '';
+  el.style.left = el.dataset.builderBaseLeft || '';
+  el.style.top = el.dataset.builderBaseTop || '';
+  el.style.maxWidth = el.dataset.builderBaseMaxWidth || '';
+  if(el.dataset.builderDisplayBase){ el.style.display = el.dataset.builderDisplayBase; }
+}
+function builderApplyConfigToElement(el, conf){
+  if(conf.text !== undefined) builderSetEditableText(el, conf.text);
+  if(conf.color !== undefined) el.style.color = conf.color;
+  if(conf.fontSize !== undefined) el.style.fontSize = conf.fontSize;
+  if(conf.width !== undefined) el.style.width = conf.width;
+  if(conf.height !== undefined) el.style.height = conf.height;
+  if(conf.minHeight !== undefined) el.style.minHeight = conf.minHeight;
+  if(conf.textAlign !== undefined) el.style.textAlign = conf.textAlign;
+  if(conf.maxWidth !== undefined) el.style.maxWidth = conf.maxWidth;
+  if(conf.offsetX !== undefined){ el.style.left = conf.offsetX + 'px'; }
+  if(conf.offsetY !== undefined){ el.style.top = conf.offsetY + 'px'; }
+  var sx = conf.scaleX !== undefined ? parseFloat(conf.scaleX) : 1;
+  var sy = conf.scaleY !== undefined ? parseFloat(conf.scaleY) : 1;
+  if(sx !== 1 || sy !== 1){ el.style.transform = 'scale(' + sx + ',' + sy + ')'; el.style.transformOrigin = 'top left'; }
+}
 function builderRenderInspector(){
-  var fields = document.getElementById('builderFields');
-  var hint = document.getElementById('builderInspectorHint');
-  if(builderState.mode !== 'edit') return;
-  if(!builderState.selectedId){
-    hint.textContent = 'Кликните по тексту, кнопке или блоку, чтобы отредактировать его.';
-    fields.innerHTML = '<div class="builder-empty">Доступно редактирование текста, размера шрифта, цвета, названия кнопок, ширины кнопок и масштаба блоков.</div>';
-    return;
-  }
-  var el = builderGetElement(builderState.selectedId);
-  if(!el){ return; }
-  var state = builderEnsureEntry(builderState.selectedId);
-  var isText = el.hasAttribute('data-builder-text');
-  var isButton = el.hasAttribute('data-builder-button');
-  var isBlock = el.hasAttribute('data-builder-block');
+  var fields = document.getElementById('builderFields'); var hint = document.getElementById('builderInspectorHint'); if(builderState.mode !== 'edit') return;
+  if(!builderState.selectedId){ hint.textContent = 'Кликните по тексту, кнопке или блоку, чтобы отредактировать его.'; fields.innerHTML = '<div class="builder-empty">Доступно редактирование текста как в Word, размеров по ширине и высоте, перетаскивание блоков по сетке и утверждение финальной версии.</div>'; return; }
+  var el = builderGetElement(builderState.selectedId); if(!el){ return; }
+  var state = builderEnsureEntry(builderState.selectedId); var isText = el.hasAttribute('data-builder-text'); var isButton = el.hasAttribute('data-builder-button'); var isBlock = el.hasAttribute('data-builder-block');
   hint.textContent = 'Выбран элемент: ' + (el.dataset.builderLabel || el.tagName.toLowerCase()) + '.';
   var html = '';
-  if(isText || isButton){
-    html += '<div class="builder-field"><label>' + (isButton ? 'Название кнопки' : 'Текст') + '</label><input id="builderTextInput" type="text" value="' + builderEscape(builderGetEditableText(el)) + '" /></div>';
-  }
+  if(isText || isButton){ html += '<div class="builder-field"><label>' + (isButton ? 'Текст кнопки' : 'Текст') + '</label><textarea id="builderTextInput">' + builderEscape(builderGetEditableText(el)) + '</textarea></div>'; }
   if(isText){
-    html += '<div class="builder-split"><div class="builder-field"><label>Размер шрифта (px)</label><input id="builderFontSizeInput" type="number" min="10" max="96" value="' + builderGetNumericValue(el, 'fontSize') + '" /></div><div class="builder-field"><label>Цвет текста</label><select id="builderColorInput">' + builderPalette.map(function(item){
-      var selected = (state.color || '') === item.value ? ' selected' : '';
-      return '<option value="' + item.value + '"' + selected + '>' + item.label + '</option>';
-    }).join('') + '</select></div></div>';
+    html += '<div class="builder-split"><div class="builder-field"><label>Размер шрифта (px)</label><input id="builderFontSizeInput" type="number" min="10" max="96" value="' + builderGetNumericValue(el, 'fontSize') + '" /></div><div class="builder-field"><label>Цвет текста</label><select id="builderColorInput">' + builderPalette.map(function(item){ var selected = (state.color || '') === item.value ? ' selected' : ''; return '<option value="' + item.value + '"' + selected + '>' + item.label + '</option>'; }).join('') + '</select></div></div>';
+    html += '<div class="builder-field"><label>Выравнивание текста</label><select id="builderTextAlignInput"><option value="">По умолчанию</option><option value="left"' + ((state.textAlign || el.style.textAlign) === 'left' ? ' selected' : '') + '>По левому краю</option><option value="center"' + ((state.textAlign || el.style.textAlign) === 'center' ? ' selected' : '') + '>По центру</option><option value="right"' + ((state.textAlign || el.style.textAlign) === 'right' ? ' selected' : '') + '>По правому краю</option></select></div>';
   }
-  if(isButton){
-    html += '<div class="builder-field"><label>Ширина кнопки (%)</label><input id="builderWidthInput" type="range" min="20" max="100" step="5" value="' + builderGetWidthPercent(el) + '" /></div>';
-  }
+  if(isButton){ html += '<div class="builder-split"><div class="builder-field"><label>Ширина кнопки (%)</label><input id="builderWidthInput" type="range" min="20" max="100" step="5" value="' + builderGetPercentValue(el, state.width, 100) + '" /><div class="builder-inline-value" id="builderWidthValue"></div></div><div class="builder-field"><label>Высота кнопки (px)</label><input id="builderHeightInput" type="number" min="36" max="140" value="' + builderGetNumericValue(el, 'height') + '" /></div></div>'; }
   if(isBlock){
-    html += '<div class="builder-field"><label>Размер блока (%)</label><input id="builderScaleInput" type="range" min="80" max="120" step="5" value="' + builderGetScalePercent(el) + '" /></div>';
+    html += '<div class="builder-split"><div class="builder-field"><label>Ширина блока (%)</label><input id="builderBlockWidthInput" type="range" min="30" max="100" step="5" value="' + builderGetPercentValue(el, state.width, 100) + '" /><div class="builder-inline-value" id="builderBlockWidthValue"></div></div><div class="builder-field"><label>Высота блока (px)</label><input id="builderBlockHeightInput" type="number" min="0" max="2000" value="' + builderGetNumericValue(el, 'minHeight') + '" /></div></div>';
+    html += '<div class="builder-split"><div class="builder-field"><label>Масштаб по ширине (%)</label><input id="builderScaleXInput" type="range" min="50" max="150" step="5" value="' + builderGetScaleAxisPercent(el, state, 'x') + '" /><div class="builder-inline-value" id="builderScaleXValue"></div></div><div class="builder-field"><label>Масштаб по высоте (%)</label><input id="builderScaleYInput" type="range" min="50" max="150" step="5" value="' + builderGetScaleAxisPercent(el, state, 'y') + '" /><div class="builder-inline-value" id="builderScaleYValue"></div></div></div>';
+    html += '<div class="builder-split"><div class="builder-field"><label>Смещение X (px)</label><input id="builderOffsetXInput" type="number" step="10" value="' + (state.offsetX || 0) + '" /></div><div class="builder-field"><label>Смещение Y (px)</label><input id="builderOffsetYInput" type="number" step="10" value="' + (state.offsetY || 0) + '" /></div></div>';
   }
-  fields.innerHTML = html;
-  builderBindInspectorInputs(el, state, { isText:isText, isButton:isButton, isBlock:isBlock });
+  fields.innerHTML = html; builderBindInspectorInputs(el, state, { isText:isText, isButton:isButton, isBlock:isBlock });
 }
 function builderBindInspectorInputs(el, state, flags){
-  var textInput = document.getElementById('builderTextInput');
-  if(textInput && (flags.isText || flags.isButton)){
-    textInput.addEventListener('input', function(){
-      state.text = this.value;
-      builderSetEditableText(el, this.value);
-      builderUpdateDirtyState();
-    });
-  }
+  var textInput = document.getElementById('builderTextInput'); if(textInput && (flags.isText || flags.isButton)){ textInput.addEventListener('input', function(){ state.text = this.value; builderSetEditableText(el, this.value); builderUpdateDirtyState(); }); }
   if(flags.isText){
-    var fontSizeInput = document.getElementById('builderFontSizeInput');
-    var colorInput = document.getElementById('builderColorInput');
-    if(fontSizeInput){
-      fontSizeInput.addEventListener('input', function(){
-        state.fontSize = this.value ? this.value + 'px' : '';
-        el.style.fontSize = state.fontSize;
-        builderUpdateDirtyState();
-      });
-    }
-    if(colorInput){
-      colorInput.addEventListener('change', function(){
-        state.color = this.value;
-        el.style.color = this.value;
-        builderUpdateDirtyState();
-      });
-    }
+    var fontSizeInput = document.getElementById('builderFontSizeInput'); var colorInput = document.getElementById('builderColorInput'); var textAlignInput = document.getElementById('builderTextAlignInput');
+    if(fontSizeInput){ fontSizeInput.addEventListener('input', function(){ state.fontSize = this.value ? this.value + 'px' : ''; el.style.fontSize = state.fontSize; builderUpdateDirtyState(); }); }
+    if(colorInput){ colorInput.addEventListener('change', function(){ state.color = this.value; el.style.color = this.value; builderUpdateDirtyState(); }); }
+    if(textAlignInput){ textAlignInput.addEventListener('change', function(){ state.textAlign = this.value; el.style.textAlign = this.value; builderUpdateDirtyState(); }); }
   }
   if(flags.isButton){
-    var widthInput = document.getElementById('builderWidthInput');
-    if(widthInput){
-      widthInput.addEventListener('input', function(){
-        state.width = this.value + '%';
-        el.style.width = state.width;
-        builderUpdateDirtyState();
-      });
-    }
+    var widthInput = document.getElementById('builderWidthInput'); var heightInput = document.getElementById('builderHeightInput');
+    if(widthInput){ builderBindPercentLabel(widthInput, document.getElementById('builderWidthValue')); widthInput.addEventListener('input', function(){ state.width = this.value + '%'; el.style.width = state.width; builderUpdateDirtyState(); }); }
+    if(heightInput){ heightInput.addEventListener('input', function(){ state.height = this.value ? this.value + 'px' : ''; el.style.height = state.height; builderUpdateDirtyState(); }); }
   }
   if(flags.isBlock){
-    var scaleInput = document.getElementById('builderScaleInput');
-    if(scaleInput){
-      scaleInput.addEventListener('input', function(){
-        state.scale = (this.value / 100).toFixed(2);
-        el.style.transform = 'scale(' + state.scale + ')';
-        builderUpdateDirtyState();
-      });
-    }
+    var blockWidthInput = document.getElementById('builderBlockWidthInput'); var blockHeightInput = document.getElementById('builderBlockHeightInput'); var scaleXInput = document.getElementById('builderScaleXInput'); var scaleYInput = document.getElementById('builderScaleYInput'); var offsetXInput = document.getElementById('builderOffsetXInput'); var offsetYInput = document.getElementById('builderOffsetYInput');
+    if(blockWidthInput){ builderBindPercentLabel(blockWidthInput, document.getElementById('builderBlockWidthValue')); blockWidthInput.addEventListener('input', function(){ state.width = this.value + '%'; el.style.width = state.width; builderUpdateDirtyState(); }); }
+    if(blockHeightInput){ blockHeightInput.addEventListener('input', function(){ state.minHeight = this.value ? this.value + 'px' : ''; el.style.minHeight = state.minHeight; builderUpdateDirtyState(); }); }
+    if(scaleXInput){ builderBindPercentLabel(scaleXInput, document.getElementById('builderScaleXValue')); scaleXInput.addEventListener('input', function(){ state.scaleX = (this.value / 100).toFixed(2); builderApplyScale(el, state); builderUpdateDirtyState(); }); }
+    if(scaleYInput){ builderBindPercentLabel(scaleYInput, document.getElementById('builderScaleYValue')); scaleYInput.addEventListener('input', function(){ state.scaleY = (this.value / 100).toFixed(2); builderApplyScale(el, state); builderUpdateDirtyState(); }); }
+    if(offsetXInput){ offsetXInput.addEventListener('input', function(){ state.offsetX = builderSnap(this.value); el.style.left = state.offsetX + 'px'; this.value = state.offsetX; builderUpdateDirtyState(); }); }
+    if(offsetYInput){ offsetYInput.addEventListener('input', function(){ state.offsetY = builderSnap(this.value); el.style.top = state.offsetY + 'px'; this.value = state.offsetY; builderUpdateDirtyState(); }); }
   }
 }
-function builderUpdateDirtyState(){
-  var dirty = JSON.stringify(builderState.draft) !== JSON.stringify(builderState.saved);
-  var label = document.getElementById('builderDirtyState');
-  if(label) label.textContent = dirty ? 'Есть несохранённые изменения.' : 'Нет несохранённых изменений.';
-}
-function builderGetNumericValue(el, prop){
-  var current = parseFloat((builderCurrentState()[el.dataset.builderId] || {})[prop] || getComputedStyle(el)[prop]);
-  return isNaN(current) ? '' : Math.round(current);
-}
-function builderGetWidthPercent(el){
-  var raw = (builderCurrentState()[el.dataset.builderId] || {}).width || el.style.width || '100%';
-  return parseInt(raw, 10) || 100;
-}
-function builderGetScalePercent(el){
-  var raw = (builderCurrentState()[el.dataset.builderId] || {}).scale;
-  if(raw) return Math.round(parseFloat(raw) * 100);
-  var transform = el.style.transform || '';
-  var match = transform.match(/scale\(([^)]+)\)/);
-  return match ? Math.round(parseFloat(match[1]) * 100) : 100;
-}
-function builderGetEditableText(el){
-  var ownText = '';
-  Array.prototype.forEach.call(el.childNodes, function(node){
-    if(node.nodeType === Node.TEXT_NODE){ ownText += node.textContent; }
-  });
-  ownText = ownText.replace(/\s+/g, ' ').trim();
-  return ownText || (el.textContent || '').replace(/\s+/g, ' ').trim();
-}
-function builderSetEditableText(el, value){
-  var textNode = null;
-  Array.prototype.forEach.call(el.childNodes, function(node){
-    if(!textNode && node.nodeType === Node.TEXT_NODE){ textNode = node; }
-  });
-  if(textNode){
-    textNode.textContent = value + (el.children.length ? ' ' : '');
-  } else if(el.children.length){
-    el.insertBefore(document.createTextNode(value + ' '), el.firstChild);
-  } else {
-    el.textContent = value;
-  }
-}
-function builderEscape(value){
-  return (value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-function builderUpdateRulers(){
-  var top = document.querySelector('.builder-ruler-top');
-  var left = document.querySelector('.builder-ruler-left');
-  if(!top || !left) return;
-  var width = Math.max(window.innerWidth, 320);
-  var height = Math.max(window.innerHeight, 320);
-  var labelsX = [];
-  for(var x = 50; x < width; x += 50){ labelsX.push('linear-gradient(to right, transparent ' + (x-12) + 'px, rgba(255,255,255,.75) ' + (x-12) + 'px, rgba(255,255,255,.75) ' + (x-11) + 'px, transparent ' + (x-11) + 'px)'); }
-  var labelsY = [];
-  for(var y = 50; y < height; y += 50){ labelsY.push('linear-gradient(to bottom, transparent ' + (y-12) + 'px, rgba(255,255,255,.75) ' + (y-12) + 'px, rgba(255,255,255,.75) ' + (y-11) + 'px, transparent ' + (y-11) + 'px)'); }
-  top.style.setProperty('--builder-ruler-labels', labelsX.join(','));
-  left.style.setProperty('--builder-ruler-labels', labelsY.join(','));
-}
+function builderBindPercentLabel(input, label){ if(!input || !label) return; var render=function(){ label.textContent = input.value + '%'; }; render(); input.addEventListener('input', render); }
+function builderApplyScale(el, state){ var sx = state.scaleX || '1.00'; var sy = state.scaleY || '1.00'; el.style.transform = 'scale(' + sx + ',' + sy + ')'; el.style.transformOrigin = 'top left'; }
+function builderUpdateDirtyState(){ var dirty = JSON.stringify(builderState.draft) !== JSON.stringify(builderState.saved); var label = document.getElementById('builderDirtyState'); if(label) label.textContent = dirty ? 'Есть несохранённые изменения.' : 'Нет несохранённых изменений.'; }
+function builderGetNumericValue(el, prop){ var conf = builderCurrentState()[el.dataset.builderId] || {}; var current = parseFloat(conf[prop] || getComputedStyle(el)[prop] || el.style[prop]); return isNaN(current) ? '' : Math.round(current); }
+function builderGetPercentValue(el, stored, fallback){ var raw = stored || el.style.width || getComputedStyle(el).width; if(typeof raw === 'string' && raw.indexOf('%') > -1) return parseInt(raw, 10) || fallback; return fallback; }
+function builderGetScaleAxisPercent(el, state, axis){ var key = axis === 'x' ? 'scaleX' : 'scaleY'; var raw = state[key]; if(raw) return Math.round(parseFloat(raw) * 100); var transform = el.style.transform || ''; var match = transform.match(/scale\(([^,]+),?\s*([^)]+)?\)/); if(match){ return Math.round(parseFloat(axis === 'x' ? match[1] : (match[2] || match[1])) * 100); } return 100; }
+function builderGetEditableText(el){ var ownText = ''; Array.prototype.forEach.call(el.childNodes, function(node){ if(node.nodeType === Node.TEXT_NODE){ ownText += node.textContent; } }); ownText = ownText.replace(/\s+/g, ' ').trim(); return ownText || (el.textContent || '').replace(/\s+/g, ' ').trim(); }
+function builderSetEditableText(el, value){ var textNode = null; Array.prototype.forEach.call(el.childNodes, function(node){ if(!textNode && node.nodeType === Node.TEXT_NODE){ textNode = node; } }); if(textNode){ textNode.textContent = value + (el.children.length ? ' ' : ''); } else if(el.children.length){ el.insertBefore(document.createTextNode(value + ' '), el.firstChild); } else { el.textContent = value; } }
+function builderEscape(value){ return (value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function builderUpdateRulers(){ var top = document.querySelector('.builder-ruler-top'); var left = document.querySelector('.builder-ruler-left'); if(!top || !left) return; var width = Math.max(window.innerWidth, 320); var height = Math.max(window.innerHeight, 320); var labelsX = []; for(var x = 50; x < width; x += 50){ labelsX.push('linear-gradient(to right, transparent ' + (x-12) + 'px, rgba(255,255,255,.75) ' + (x-12) + 'px, rgba(255,255,255,.75) ' + (x-11) + 'px, transparent ' + (x-11) + 'px)'); } var labelsY = []; for(var y = 50; y < height; y += 50){ labelsY.push('linear-gradient(to bottom, transparent ' + (y-12) + 'px, rgba(255,255,255,.75) ' + (y-12) + 'px, rgba(255,255,255,.75) ' + (y-11) + 'px, transparent ' + (y-11) + 'px)'); } top.style.setProperty('--builder-ruler-labels', labelsX.join(',')); left.style.setProperty('--builder-ruler-labels', labelsY.join(',')); }
+function builderStartDragging(event){ if(builderState.mode !== 'edit') return; if(event.target.closest('#builderPanel') || event.target.closest('#builderInspector')) return; var el = event.currentTarget; builderSelect(el.dataset.builderId); var state = builderEnsureEntry(el.dataset.builderId); builderState.dragging = { id: el.dataset.builderId, startX: event.clientX, startY: event.clientY, originX: state.offsetX || 0, originY: state.offsetY || 0 }; el.classList.add('builder-dragging'); event.preventDefault(); }
+function builderHandlePointerMove(event){ if(!builderState.dragging || builderState.mode !== 'edit') return; var drag = builderState.dragging; var el = builderGetElement(drag.id); var state = builderEnsureEntry(drag.id); if(!el) return; state.offsetX = builderSnap(drag.originX + (event.clientX - drag.startX)); state.offsetY = builderSnap(drag.originY + (event.clientY - drag.startY)); el.style.left = state.offsetX + 'px'; el.style.top = state.offsetY + 'px'; var xInput = document.getElementById('builderOffsetXInput'); var yInput = document.getElementById('builderOffsetYInput'); if(xInput) xInput.value = state.offsetX; if(yInput) yInput.value = state.offsetY; builderUpdateDirtyState(); }
+function builderStopDragging(){ if(!builderState.dragging) return; var el = builderGetElement(builderState.dragging.id); if(el) el.classList.remove('builder-dragging'); builderState.dragging = null; }
+function builderSnap(value){ var num = parseFloat(value) || 0; return Math.round(num / BUILDER_GRID) * BUILDER_GRID; }
+function builderExportHtml(){ var draft = builderState.mode === 'edit' ? builderState.draft : builderState.saved; var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML; html = html.replace("var BUILDER_PRESET_STATE = window.BUILDER_PRESET_STATE || {};", "var BUILDER_PRESET_STATE = " + JSON.stringify(draft) + ";"); html = html.replace('id="builderPanel"', 'id="builderPanel" style="display:none"'); html = html.replace('id="builderInspector"', 'id="builderInspector" style="display:none"'); var blob = new Blob([html], { type: 'text/html;charset=utf-8' }); var link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'aktivfin-published.html'; link.click(); setTimeout(function(){ URL.revokeObjectURL(link.href); }, 1000); }
+
 document.addEventListener('DOMContentLoaded', builderInit);
 
 /* ── Telegram helpers ───────────────────── */
